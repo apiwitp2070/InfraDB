@@ -19,7 +19,7 @@ const isPathActive = (pathname: string, href: string) => {
   return pathname === href || pathname.startsWith(`${href}/`);
 };
 
-export default function Sider() {
+export default function Sidebar() {
   const pathname = usePathname();
 
   if (!pathname) {
