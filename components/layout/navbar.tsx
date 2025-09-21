@@ -17,14 +17,17 @@ import clsx from "clsx";
 import { KeyRoundIcon } from "lucide-react";
 
 import { siteConfig } from "@/config/site";
-import { ThemeSwitch } from "@/components/theme-switch";
+import { ThemeSwitch } from "@/components/layout/theme-switch";
 import { Logo } from "@/components/icons";
 
 export const Navbar = () => {
   const pathname = usePathname();
 
   return (
-    <HeroUINavbar maxWidth="xl" position="sticky">
+    <HeroUINavbar
+      maxWidth="full"
+      className="fixed top-0 left-0 z-100 shadow-xs"
+    >
       <NavbarContent className="basis-1/5 sm:basis-full" justify="start">
         <NavbarBrand as="li" className="gap-3 max-w-fit">
           <NextLink className="flex justify-start items-center gap-1" href="/">
@@ -33,7 +36,7 @@ export const Navbar = () => {
           </NextLink>
         </NavbarBrand>
 
-        {/* <ul className="hidden lg:flex gap-4 justify-start ml-2">
+        {/* <ul className="hidden md:flex gap-4 justify-start ml-2">
           {siteConfig.navItems.map((item) => {
             const isActive = pathname.startsWith(item.href);
 
@@ -61,7 +64,7 @@ export const Navbar = () => {
         justify="end"
       >
         <NavbarItem className="hidden sm:flex items-center gap-4">
-          <NextLink href="/tokens">
+          <NextLink href="/settings">
             <KeyRoundIcon className="text-default-500" />
           </NextLink>
           <ThemeSwitch />
@@ -75,7 +78,7 @@ export const Navbar = () => {
           isIconOnly
           radius="full"
           variant="light"
-          href="/tokens"
+          href="/settings"
         >
           <KeyRoundIcon className="text-default-500" />
         </Button>

@@ -66,8 +66,8 @@ export default function TokenSettingsPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
-      <Card shadow="none" className="border border-gray-300">
+    <div>
+      <Card shadow="none">
         <CardHeader className="flex flex-col items-start gap-1">
           <h1 className="text-xl font-semibold">Personal Access Tokens</h1>
           <p className="text-sm text-default-500">
@@ -75,7 +75,6 @@ export default function TokenSettingsPage() {
             required scopes to interact with GitLab and GitHub APIs.
           </p>
         </CardHeader>
-        <Divider />
         <CardBody className="gap-6">
           <section className="flex flex-col gap-4">
             <header>
@@ -95,7 +94,7 @@ export default function TokenSettingsPage() {
             />
           </section>
 
-          <Spacer y={2} />
+          <Divider />
 
           <section className="flex flex-col gap-4">
             <header>

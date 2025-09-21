@@ -24,72 +24,9 @@ import {
   parseRepositoryInput,
   upsertGitHubSecret,
 } from "@/lib/github";
-
-const parseEnvInput = (input: string) => {
-  return input
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter((line) => line.length && !line.startsWith("#"))
-    .map((line) => {
-      const [key, ...rest] = line.split("=");
-      const value = rest.length ? rest.join("=") : "";
-
-      return {
-        key: key.trim(),
-        value,
-      };
-    })
-    .filter((entry) => entry.key.length);
-};
-
-type SecretStatus = "pending" | "in-progress" | "success" | "error" | "skipped";
-
-type StatusMessage = {
-  type: "success" | "error";
-  text: string;
-};
-
-const StatusChip = ({ status }: { status: SecretStatus }) => {
-  switch (status) {
-    case "pending":
-      return (
-        <Chip radius="sm" size="sm" variant="flat">
-          Pending
-        </Chip>
-      );
-    case "in-progress":
-      return (
-        <Chip
-          radius="sm"
-          size="sm"
-          variant="flat"
-          color="primary"
-          startContent={<Spinner color="primary" size="sm" />}
-        >
-          Updating
-        </Chip>
-      );
-    case "success":
-      return (
-        <Chip radius="sm" size="sm" variant="flat" color="success">
-          Completed
-        </Chip>
-      );
-    case "skipped":
-      return (
-        <Chip radius="sm" size="sm" variant="flat" color="warning">
-          Skipped
-        </Chip>
-      );
-    case "error":
-    default:
-      return (
-        <Chip radius="sm" size="sm" variant="flat" color="danger">
-          Error
-        </Chip>
-      );
-  }
-};
+import StatusChip from "@/components/status-chip";
+import { StatusMessage, VariableStatus, parseEnvInput } from "@/utils/variable";
+import VariableTable from "@/components/variable-table";
 
 export default function GitHubSecretsPage() {
   const { tokens, isReady } = useTokenStorage();
@@ -97,14 +34,14 @@ export default function GitHubSecretsPage() {
   const [envText, setEnvText] = useState("");
   const [skipEmpty, setSkipEmpty] = useState(true);
   const [baseUrl, setBaseUrl] = useState(githubApiBaseUrl);
-  const [statuses, setStatuses] = useState<Record<string, SecretStatus>>({});
+  const [statuses, setStatuses] = useState<Record<string, VariableStatus>>({});
   const [isSyncing, setIsSyncing] = useState(false);
   const [message, setMessage] = useState<StatusMessage | null>(null);
 
   const envEntries = useMemo(() => parseEnvInput(envText), [envText]);
 
   useEffect(() => {
-    const nextStatuses: Record<string, SecretStatus> = {};
+    const nextStatuses: Record<string, VariableStatus> = {};
 
     envEntries.forEach(({ key, value }) => {
       const shouldSkip = skipEmpty && !value.length;
@@ -145,6 +82,7 @@ export default function GitHubSecretsPage() {
     setMessage(null);
 
     const resolvedBaseUrl = baseUrl.trim() || githubApiBaseUrl;
+
     let hasErrors = false;
 
     for (const { key, value } of envEntries) {
@@ -230,11 +168,11 @@ export default function GitHubSecretsPage() {
 
           <div className="flex flex-col gap-3">
             <label className="flex flex-col gap-2 text-sm">
-              <span className="font-medium">Secrets</span>
+              <span className="font-medium">Repository Secrets</span>
               <textarea
                 className="min-h-[200px] rounded-medium border border-default-200 bg-content1 px-3 py-2 font-mono text-sm outline-none focus-visible:border-primary"
                 onChange={(event) => setEnvText(event.target.value)}
-                placeholder={`API_KEY=...\nDATABASE_URL=postgres://...`}
+                placeholder={`API_URL=https://example.com\nAPI_KEY=123456`}
                 value={envText}
               />
             </label>
@@ -243,6 +181,10 @@ export default function GitHubSecretsPage() {
             </Switch>
           </div>
 
+          {envEntries.length > 0 ? (
+            <VariableTable data={envEntries} statuses={statuses} />
+          ) : null}
+
           <div className="flex items-center justify-end gap-3">
             <Button
               color="primary"
@@ -250,54 +192,11 @@ export default function GitHubSecretsPage() {
               isLoading={isSyncing}
               onPress={handleSync}
             >
-              Sync secrets
+              Sync variables
             </Button>
           </div>
         </CardBody>
       </Card>
-
-      {envEntries.length > 0 ? (
-        <Card shadow="none">
-          <CardHeader className="flex flex-col items-start gap-1">
-            <h2 className="text-lg font-semibold">Preview</h2>
-            <p className="text-sm text-default-500">
-              GitHub secrets are encrypted client-side before upload.
-            </p>
-          </CardHeader>
-          <CardBody>
-            <Table aria-label="GitHub secrets preview" removeWrapper>
-              <TableHeader>
-                <TableColumn>Key</TableColumn>
-                <TableColumn>Value</TableColumn>
-                <TableColumn className="w-32">Status</TableColumn>
-              </TableHeader>
-              <TableBody emptyContent="No secrets parsed.">
-                {envEntries.map(({ key, value }) => (
-                  <TableRow key={key}>
-                    <TableCell className="font-medium">{key}</TableCell>
-                    <TableCell>
-                      <div
-                        className={clsx(
-                          "max-w-xl",
-                          value.length
-                            ? "truncate font-mono text-xs"
-                            : "italic text-default-400"
-                        )}
-                        title={value}
-                      >
-                        {value.length ? value : "(empty)"}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <StatusChip status={statuses[key] ?? "pending"} />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardBody>
-        </Card>
-      ) : null}
     </div>
   );
 }

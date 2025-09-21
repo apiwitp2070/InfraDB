@@ -31,8 +31,8 @@ export const siteConfig = {
       href: "/github/secrets",
     },
     {
-      label: "Token Settings",
-      href: "/tokens",
+      label: "Settings",
+      href: "/settings",
     },
   ],
   sidebarSections: [

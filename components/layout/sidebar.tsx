@@ -27,16 +27,7 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="hidden md:flex fixed inset-y-0 left-0 z-40 w-64 flex-col border-r border-default-200 bg-content1/60 px-4 py-6 backdrop-blur-md">
-      <NextLink className="flex items-center gap-2 px-2" href="/">
-        <Logo className="text-primary" size={28} />
-        <span className="text-base font-semibold tracking-tight">
-          {siteConfig.name}
-        </span>
-      </NextLink>
-
-      <Divider className="my-6" />
-
+    <aside className="hidden md:flex fixed inset-y-0 top-16 left-0 z-40 w-64 h-[calc[100vh-64px]] flex-col border-r border-default-200 bg-content1/60 px-4 py-6 backdrop-blur-md">
       <ScrollShadow className="flex-1 -mx-2 px-2" hideScrollBar>
         <nav aria-label="Main navigation" className="flex flex-col gap-6">
           {sections.map((section) => (

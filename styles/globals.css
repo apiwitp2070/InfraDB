@@ -1,3 +1,11 @@
 @import "tailwindcss";
 
-@config "../tailwind.config.js"
+.text-title {
+  background: #47b4cf;
+  background: linear-gradient(to right, #47b4cf 0%, #e136e7 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+@config "../tailwind.config.js";

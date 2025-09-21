@@ -5,7 +5,6 @@ import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Input } from "@heroui/input";
 import { Switch } from "@heroui/switch";
-import { Chip } from "@heroui/chip";
 import { Alert } from "@heroui/alert";
 import {
   Table,
@@ -15,82 +14,13 @@ import {
   TableRow,
   TableCell,
 } from "@heroui/table";
-import { Spinner } from "@heroui/spinner";
 import clsx from "clsx";
 
+import StatusChip from "@/components/status-chip";
 import { useTokenStorage } from "@/hooks/useTokenStorage";
 import { gitLabApiBaseUrl, upsertGitLabVariable } from "@/lib/gitlab";
-
-const parseEnvInput = (input: string) => {
-  return input
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter((line) => line.length && !line.startsWith("#"))
-    .map((line) => {
-      const [key, ...rest] = line.split("=");
-      const value = rest.length ? rest.join("=") : "";
-
-      return {
-        key: key.trim(),
-        value,
-      };
-    })
-    .filter((entry) => entry.key.length);
-};
-
-type VariableStatus =
-  | "pending"
-  | "in-progress"
-  | "success"
-  | "error"
-  | "skipped";
-
-type StatusMessage = {
-  type: "success" | "error";
-  text: string;
-};
-
-const StatusChip = ({ status }: { status: VariableStatus }) => {
-  switch (status) {
-    case "pending":
-      return (
-        <Chip radius="sm" size="sm" variant="flat">
-          Pending
-        </Chip>
-      );
-    case "in-progress":
-      return (
-        <Chip
-          radius="sm"
-          size="sm"
-          variant="flat"
-          color="primary"
-          startContent={<Spinner color="primary" size="sm" />}
-        >
-          Updating
-        </Chip>
-      );
-    case "success":
-      return (
-        <Chip radius="sm" size="sm" variant="flat" color="success">
-          Completed
-        </Chip>
-      );
-    case "skipped":
-      return (
-        <Chip radius="sm" size="sm" variant="flat" color="warning">
-          Skipped
-        </Chip>
-      );
-    case "error":
-    default:
-      return (
-        <Chip radius="sm" size="sm" variant="flat" color="danger">
-          Error
-        </Chip>
-      );
-  }
-};
+import { VariableStatus, StatusMessage, parseEnvInput } from "@/utils/variable";
+import VariableTable from "@/components/variable-table";
 
 export default function GitLabVariablesPage() {
   const { tokens, isReady } = useTokenStorage();
@@ -238,6 +168,10 @@ export default function GitLabVariablesPage() {
             </Switch>
           </div>
 
+          {envEntries.length > 0 ? (
+            <VariableTable data={envEntries} statuses={statuses} />
+          ) : null}
+
           <div className="flex items-center justify-end gap-3">
             <Button
               color="primary"
@@ -250,49 +184,6 @@ export default function GitLabVariablesPage() {
           </div>
         </CardBody>
       </Card>
-
-      {envEntries.length > 0 ? (
-        <Card shadow="none" className="border border-gray-300">
-          <CardHeader className="flex flex-col items-start gap-1">
-            <h2 className="text-lg font-semibold">Preview</h2>
-            <p className="text-sm text-default-500">
-              Review parsed variables before syncing.
-            </p>
-          </CardHeader>
-          <CardBody>
-            <Table aria-label="GitLab variables preview" removeWrapper>
-              <TableHeader>
-                <TableColumn>Key</TableColumn>
-                <TableColumn>Value</TableColumn>
-                <TableColumn className="w-32">Status</TableColumn>
-              </TableHeader>
-              <TableBody emptyContent="No variables parsed.">
-                {envEntries.map(({ key, value }) => (
-                  <TableRow key={key}>
-                    <TableCell className="font-medium">{key}</TableCell>
-                    <TableCell>
-                      <div
-                        className={clsx(
-                          "max-w-xl",
-                          value.length
-                            ? "truncate font-mono text-xs"
-                            : "italic text-default-400"
-                        )}
-                        title={value}
-                      >
-                        {value.length ? value : "(empty)"}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <StatusChip status={statuses[key] ?? "pending"} />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardBody>
-        </Card>
-      ) : null}
     </div>
   );
 }

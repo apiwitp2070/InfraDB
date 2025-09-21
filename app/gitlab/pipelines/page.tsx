@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Input } from "@heroui/input";
@@ -411,7 +411,10 @@ export default function GitLabPipelinesPage() {
                       <span>Project ID: {project.id}</span>
                       <span>{project.branches.length} branches</span>
                     </div>
-                    <Table aria-label={`Branches for ${project.name}`}>
+                    <Table
+                      aria-label={`Branches for ${project.name}`}
+                      removeWrapper
+                    >
                       <TableHeader>
                         <TableColumn>Branch</TableColumn>
                         <TableColumn className="w-24">Default</TableColumn>
