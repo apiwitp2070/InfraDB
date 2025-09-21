@@ -67,7 +67,7 @@ export default function TokenSettingsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Card>
+      <Card shadow="none" className="border border-gray-300">
         <CardHeader className="flex flex-col items-start gap-1">
           <h1 className="text-xl font-semibold">Personal Access Tokens</h1>
           <p className="text-sm text-default-500">
@@ -129,9 +129,7 @@ export default function TokenSettingsPage() {
             </div>
             <div className="flex items-center gap-2">
               <Button
-                isDisabled={
-                  !isReady || (!tokens.gitlab && !tokens.github)
-                }
+                isDisabled={!isReady || (!tokens.gitlab && !tokens.github)}
                 variant="light"
                 onPress={handleClear}
               >

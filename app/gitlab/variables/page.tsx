@@ -19,10 +19,7 @@ import { Spinner } from "@heroui/spinner";
 import clsx from "clsx";
 
 import { useTokenStorage } from "@/hooks/useTokenStorage";
-import {
-  gitLabApiBaseUrl,
-  upsertGitLabVariable,
-} from "@/lib/gitlab";
+import { gitLabApiBaseUrl, upsertGitLabVariable } from "@/lib/gitlab";
 
 const parseEnvInput = (input: string) => {
   return input
@@ -182,23 +179,27 @@ export default function GitLabVariablesPage() {
   };
 
   const canSync =
-    Boolean(projectId.trim()) && envEntries.length > 0 && Boolean(tokens.gitlab);
+    Boolean(projectId.trim()) &&
+    envEntries.length > 0 &&
+    Boolean(tokens.gitlab);
 
   return (
     <div className="flex flex-col gap-6">
-      <Card>
+      <Card shadow="none">
         <CardHeader className="flex flex-col items-start gap-1">
           <h1 className="text-xl font-semibold">GitLab Variables</h1>
           <p className="text-sm text-default-500">
-            Paste variables in KEY=VALUE format. Comments (#) and blank lines are
-            ignored.
+            Paste variables in KEY=VALUE format. Comments (#) and blank lines
+            are ignored.
           </p>
         </CardHeader>
         <CardBody className="flex flex-col gap-6">
           {message ? (
             <Alert
               color={message.type === "error" ? "danger" : "success"}
-              title={message.type === "error" ? "Something went wrong" : "All good"}
+              title={
+                message.type === "error" ? "Something went wrong" : "All good"
+              }
               variant="flat"
             >
               {message.text}
@@ -232,10 +233,7 @@ export default function GitLabVariablesPage() {
                 value={envText}
               />
             </label>
-            <Switch
-              isSelected={skipEmpty}
-              onValueChange={setSkipEmpty}
-            >
+            <Switch isSelected={skipEmpty} onValueChange={setSkipEmpty}>
               Skip entries with empty values
             </Switch>
           </div>
@@ -254,7 +252,7 @@ export default function GitLabVariablesPage() {
       </Card>
 
       {envEntries.length > 0 ? (
-        <Card>
+        <Card shadow="none" className="border border-gray-300">
           <CardHeader className="flex flex-col items-start gap-1">
             <h2 className="text-lg font-semibold">Preview</h2>
             <p className="text-sm text-default-500">
@@ -262,7 +260,7 @@ export default function GitLabVariablesPage() {
             </p>
           </CardHeader>
           <CardBody>
-            <Table aria-label="GitLab variables preview">
+            <Table aria-label="GitLab variables preview" removeWrapper>
               <TableHeader>
                 <TableColumn>Key</TableColumn>
                 <TableColumn>Value</TableColumn>
@@ -276,7 +274,9 @@ export default function GitLabVariablesPage() {
                       <div
                         className={clsx(
                           "max-w-xl",
-                          value.length ? "truncate font-mono text-xs" : "italic text-default-400"
+                          value.length
+                            ? "truncate font-mono text-xs"
+                            : "italic text-default-400"
                         )}
                         title={value}
                       >

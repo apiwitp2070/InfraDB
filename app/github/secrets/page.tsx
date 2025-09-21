@@ -42,12 +42,7 @@ const parseEnvInput = (input: string) => {
     .filter((entry) => entry.key.length);
 };
 
-type SecretStatus =
-  | "pending"
-  | "in-progress"
-  | "success"
-  | "error"
-  | "skipped";
+type SecretStatus = "pending" | "in-progress" | "success" | "error" | "skipped";
 
 type StatusMessage = {
   type: "success" | "error";
@@ -196,7 +191,7 @@ export default function GitHubSecretsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Card>
+      <Card shadow="none">
         <CardHeader className="flex flex-col items-start gap-1">
           <h1 className="text-xl font-semibold">GitHub Secrets</h1>
           <p className="text-sm text-default-500">
@@ -207,7 +202,9 @@ export default function GitHubSecretsPage() {
           {message ? (
             <Alert
               color={message.type === "error" ? "danger" : "success"}
-              title={message.type === "error" ? "Something went wrong" : "All good"}
+              title={
+                message.type === "error" ? "Something went wrong" : "All good"
+              }
               variant="flat"
             >
               {message.text}
@@ -241,10 +238,7 @@ export default function GitHubSecretsPage() {
                 value={envText}
               />
             </label>
-            <Switch
-              isSelected={skipEmpty}
-              onValueChange={setSkipEmpty}
-            >
+            <Switch isSelected={skipEmpty} onValueChange={setSkipEmpty}>
               Skip entries with empty values
             </Switch>
           </div>
@@ -263,7 +257,7 @@ export default function GitHubSecretsPage() {
       </Card>
 
       {envEntries.length > 0 ? (
-        <Card>
+        <Card shadow="none">
           <CardHeader className="flex flex-col items-start gap-1">
             <h2 className="text-lg font-semibold">Preview</h2>
             <p className="text-sm text-default-500">
@@ -271,7 +265,7 @@ export default function GitHubSecretsPage() {
             </p>
           </CardHeader>
           <CardBody>
-            <Table aria-label="GitHub secrets preview">
+            <Table aria-label="GitHub secrets preview" removeWrapper>
               <TableHeader>
                 <TableColumn>Key</TableColumn>
                 <TableColumn>Value</TableColumn>
@@ -285,7 +279,9 @@ export default function GitHubSecretsPage() {
                       <div
                         className={clsx(
                           "max-w-xl",
-                          value.length ? "truncate font-mono text-xs" : "italic text-default-400"
+                          value.length
+                            ? "truncate font-mono text-xs"
+                            : "italic text-default-400"
                         )}
                         title={value}
                       >

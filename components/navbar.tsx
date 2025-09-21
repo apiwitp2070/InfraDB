@@ -10,7 +10,6 @@ import {
   NavbarMenuItem,
 } from "@heroui/navbar";
 import { Button } from "@heroui/button";
-import { Link } from "@heroui/link";
 import { link as linkStyles } from "@heroui/theme";
 import NextLink from "next/link";
 import { usePathname } from "next/navigation";
@@ -19,7 +18,7 @@ import { KeyRoundIcon } from "lucide-react";
 
 import { siteConfig } from "@/config/site";
 import { ThemeSwitch } from "@/components/theme-switch";
-import { GithubIcon, Logo } from "@/components/icons";
+import { Logo } from "@/components/icons";
 
 export const Navbar = () => {
   const pathname = usePathname();
@@ -33,7 +32,8 @@ export const Navbar = () => {
             <p className="font-bold text-inherit">{siteConfig.name}</p>
           </NextLink>
         </NavbarBrand>
-        <ul className="hidden lg:flex gap-4 justify-start ml-2">
+
+        {/* <ul className="hidden lg:flex gap-4 justify-start ml-2">
           {siteConfig.navItems.map((item) => {
             const isActive = pathname.startsWith(item.href);
 
@@ -53,7 +53,7 @@ export const Navbar = () => {
               </NavbarItem>
             );
           })}
-        </ul>
+        </ul> */}
       </NavbarContent>
 
       <NavbarContent
@@ -92,7 +92,7 @@ export const Navbar = () => {
               <NavbarMenuItem key={item.href}>
                 <NextLink
                   className={clsx(
-                    "flex w-full items-center justify-between rounded-medium px-3 py-2 text-base",
+                    "text-center flex w-full items-center justify-between rounded-medium px-3 py-2 text-base",
                     "hover:bg-default-100",
                     isActive ? "text-primary" : "text-default-600"
                   )}
@@ -100,9 +100,6 @@ export const Navbar = () => {
                   href={item.href}
                 >
                   {item.label}
-                  {isActive ? (
-                    <span className="text-xs uppercase">Current</span>
-                  ) : null}
                 </NextLink>
               </NavbarMenuItem>
             );
