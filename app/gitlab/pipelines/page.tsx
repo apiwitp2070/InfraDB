@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Input } from "@heroui/input";
@@ -242,6 +242,14 @@ export default function GitLabPipelinesPage() {
     }
   };
 
+  const handleRemoveProject = (projectId: string, projectName: string) => {
+    setProjects((prev) => prev.filter((project) => project.id !== projectId));
+    setMessage({
+      type: "success",
+      text: `Removed ${projectName || projectId} from the list.`,
+    });
+  };
+
   const handleTrigger = async (projectId: string, branchName: string) => {
     if (!tokens.gitlab) {
       setMessage({
@@ -407,9 +415,21 @@ export default function GitLabPipelinesPage() {
                   subtitle={project.namespace}
                 >
                   <div className="flex flex-col gap-4">
-                    <div className="flex items-center justify-between text-xs text-default-500">
-                      <span>Project ID: {project.id}</span>
-                      <span>{project.branches.length} branches</span>
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex flex-wrap items-center gap-3 text-xs text-default-500">
+                        <span>Project ID: {project.id}</span>
+                        <span>{project.branches.length} branches</span>
+                      </div>
+                      <Button
+                        color="danger"
+                        size="sm"
+                        variant="light"
+                        onPress={() => {
+                          handleRemoveProject(project.id, project.name);
+                        }}
+                      >
+                        Remove project
+                      </Button>
                     </div>
                     <Table
                       aria-label={`Branches for ${project.name}`}
