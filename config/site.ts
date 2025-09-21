@@ -1,69 +1,62 @@
 export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
-  name: "Next.js + HeroUI",
-  description: "Make beautiful websites regardless of your design experience.",
+  name: "Git Utils",
+  description: "Helper tools for GitLab and GitHub REST APIs.",
   navItems: [
     {
-      label: "Home",
-      href: "/",
+      label: "GitLab Variables",
+      href: "/gitlab/variables",
     },
     {
-      label: "Docs",
-      href: "/docs",
+      label: "GitLab Pipelines",
+      href: "/gitlab/pipelines",
     },
     {
-      label: "Pricing",
-      href: "/pricing",
-    },
-    {
-      label: "Blog",
-      href: "/blog",
-    },
-    {
-      label: "About",
-      href: "/about",
+      label: "GitHub Secrets",
+      href: "/github/secrets",
     },
   ],
   navMenuItems: [
     {
-      label: "Profile",
-      href: "/profile",
+      label: "GitLab Variables",
+      href: "/gitlab/variables",
     },
     {
-      label: "Dashboard",
-      href: "/dashboard",
+      label: "GitLab Pipelines",
+      href: "/gitlab/pipelines",
     },
     {
-      label: "Projects",
-      href: "/projects",
+      label: "GitHub Secrets",
+      href: "/github/secrets",
     },
     {
-      label: "Team",
-      href: "/team",
-    },
-    {
-      label: "Calendar",
-      href: "/calendar",
-    },
-    {
-      label: "Settings",
-      href: "/settings",
-    },
-    {
-      label: "Help & Feedback",
-      href: "/help-feedback",
-    },
-    {
-      label: "Logout",
-      href: "/logout",
+      label: "Token Settings",
+      href: "/tokens",
     },
   ],
-  links: {
-    github: "https://github.com/heroui-inc/heroui",
-    twitter: "https://twitter.com/hero_ui",
-    docs: "https://heroui.com",
-    discord: "https://discord.gg/9b6yyZKmH4",
-    sponsor: "https://patreon.com/jrgarciadev",
-  },
+  sidebarSections: [
+    {
+      label: "GitLab",
+      items: [
+        {
+          label: "Variables",
+          href: "/gitlab/variables",
+        },
+        {
+          label: "Pipelines",
+          href: "/gitlab/pipelines",
+        },
+      ],
+    },
+    {
+      label: "GitHub",
+      items: [
+        {
+          label: "Secrets",
+          href: "/github/secrets",
+        },
+      ],
+    },
+  ],
 };

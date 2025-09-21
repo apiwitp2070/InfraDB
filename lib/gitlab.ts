@@ -1,0 +1,163 @@
+export type GitLabVariablePayload = {
+  key: string;
+  value: string;
+};
+
+export type GitLabBranch = {
+  name: string;
+  default: boolean;
+};
+
+export type GitLabProject = {
+  id: number;
+  name: string;
+  name_with_namespace: string;
+};
+
+const DEFAULT_GITLAB_API = "https://gitlab.com/api/v4";
+
+type UpsertVariableInput = {
+  projectId: string;
+  token: string;
+  variable: GitLabVariablePayload;
+  baseUrl?: string;
+};
+
+type GitLabRequestInit = RequestInit & { baseUrl?: string };
+
+const request = async <T>(
+  path: string,
+  token: string,
+  { baseUrl = DEFAULT_GITLAB_API, ...init }: GitLabRequestInit = {}
+): Promise<T> => {
+  const url = `${baseUrl.replace(/\/$/, "")}/${path.replace(/^\//, "")}`;
+  const response = await fetch(url, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      "PRIVATE-TOKEN": token,
+      ...(init.headers ?? {}),
+    },
+  });
+
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(message || `GitLab request failed: ${response.status}`);
+  }
+
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  return (await response.json()) as T;
+};
+
+export const upsertGitLabVariable = async ({
+  projectId,
+  token,
+  variable,
+  baseUrl,
+}: UpsertVariableInput) => {
+  const encodedProjectId = encodeURIComponent(projectId);
+  const encodedKey = encodeURIComponent(variable.key);
+
+  try {
+    await request(
+      `/projects/${encodedProjectId}/variables/${encodedKey}`,
+      token,
+      {
+        baseUrl,
+        method: "PUT",
+        body: JSON.stringify({
+          value: variable.value,
+          variable_type: "env_var",
+        }),
+      }
+    );
+  } catch (error) {
+    if (error instanceof Error && /404/.test(error.message)) {
+      await request(`/projects/${encodedProjectId}/variables`, token, {
+        baseUrl,
+        method: "POST",
+        body: JSON.stringify({
+          key: variable.key,
+          value: variable.value,
+          variable_type: "env_var",
+        }),
+      });
+      return;
+    }
+
+    throw error;
+  }
+};
+
+type FetchBranchesInput = {
+  projectId: string;
+  token: string;
+  baseUrl?: string;
+};
+
+export const fetchGitLabBranches = async ({
+  projectId,
+  token,
+  baseUrl,
+}: FetchBranchesInput) => {
+  const encodedProjectId = encodeURIComponent(projectId);
+  return request<GitLabBranch[]>(
+    `/projects/${encodedProjectId}/repository/branches`,
+    token,
+    {
+      baseUrl,
+    }
+  );
+};
+
+type FetchProjectInput = {
+  projectId: string;
+  token: string;
+  baseUrl?: string;
+};
+
+export const fetchGitLabProject = async ({
+  projectId,
+  token,
+  baseUrl,
+}: FetchProjectInput) => {
+  const encodedProjectId = encodeURIComponent(projectId);
+  return request<GitLabProject>(`/projects/${encodedProjectId}`, token, {
+    baseUrl,
+  });
+};
+
+type TriggerPipelineInput = {
+  projectId: string;
+  ref: string;
+  token: string;
+  baseUrl?: string;
+};
+
+export const triggerGitLabPipeline = async ({
+  projectId,
+  ref,
+  token,
+  baseUrl,
+}: TriggerPipelineInput) => {
+  const encodedProjectId = encodeURIComponent(projectId);
+
+  await request(`/projects/${encodedProjectId}/pipeline`, token, {
+    baseUrl,
+    method: "POST",
+    body: JSON.stringify({ ref }),
+  });
+};
+
+export const isGitLabNotFoundError = (error: unknown) => {
+  if (error instanceof Error) {
+    return /404/.test(error.message);
+  }
+
+  return false;
+};
+
+export const gitLabApiBaseUrl = DEFAULT_GITLAB_API;
