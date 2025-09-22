@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Input } from "@heroui/input";
-import { Alert } from "@heroui/alert";
 import { Chip } from "@heroui/chip";
 import { Accordion, AccordionItem } from "@heroui/accordion";
 import {
@@ -15,8 +14,9 @@ import {
   TableHeader,
   TableRow,
 } from "@heroui/table";
-import { Spinner } from "@heroui/spinner";
 
+import AlertMessage from "@/components/alert-message";
+import { useAlertMessage } from "@/hooks/useAlertMessage";
 import { useTokenStorage } from "@/hooks/useTokenStorage";
 import {
   fetchGitLabBranches,
@@ -24,99 +24,28 @@ import {
   gitLabApiBaseUrl,
   triggerGitLabPipeline,
 } from "@/lib/gitlab";
-
-type BranchStatus = "idle" | "triggering" | "success" | "error";
-
-interface BranchState {
-  name: string;
-  default: boolean;
-  status: BranchStatus;
-  lastTriggeredAt?: string;
-  error?: string;
-}
-
-interface PipelineProjectState {
-  id: string;
-  name: string;
-  namespace: string;
-  branches: BranchState[];
-}
-
-type StatusMessage = {
-  type: "success" | "error";
-  text: string;
-};
-
-type StoredBranch = {
-  name: string;
-  default: boolean;
-};
-
-type StoredProject = {
-  id: string;
-  name: string;
-  namespace: string;
-  branches: StoredBranch[];
-};
+import branchStatusChip from "@/components/branch-status-chip";
+import {
+  PipelineProjectState,
+  StoredProject,
+  BranchState,
+} from "@/types/pipeline";
+import BranchStatusChip from "@/components/branch-status-chip";
 
 const STORAGE_KEY = "gitlab_pipeline_projects";
 
-const branchStatusChip = (branch: BranchState) => {
-  switch (branch.status) {
-    case "triggering":
-      return (
-        <Chip
-          color="primary"
-          radius="sm"
-          size="sm"
-          variant="flat"
-          startContent={<Spinner color="primary" size="sm" />}
-        >
-          Triggering
-        </Chip>
-      );
-    case "success":
-      return (
-        <Chip
-          color="success"
-          radius="sm"
-          size="sm"
-          variant="flat"
-          title={branch.lastTriggeredAt}
-        >
-          Triggered
-        </Chip>
-      );
-    case "error":
-      return (
-        <Chip
-          color="danger"
-          radius="sm"
-          size="sm"
-          variant="flat"
-          title={branch.error}
-        >
-          Error
-        </Chip>
-      );
-    case "idle":
-    default:
-      return (
-        <Chip radius="sm" size="sm" variant="flat">
-          Idle
-        </Chip>
-      );
-  }
-};
-
 export default function GitLabPipelinesPage() {
   const { tokens, isReady } = useTokenStorage();
+  const {
+    message: alertMessage,
+    setMessage: setAlertMessage,
+    clearMessage: clearAlertMessage,
+  } = useAlertMessage();
   const [baseUrl, setBaseUrl] = useState(gitLabApiBaseUrl);
   const [projectIdInput, setProjectIdInput] = useState("");
   const [projects, setProjects] = useState<PipelineProjectState[]>([]);
   const [isHydrated, setIsHydrated] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
-  const [message, setMessage] = useState<StatusMessage | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -147,14 +76,14 @@ export default function GitLabPipelinesPage() {
       setProjects(revived);
     } catch (error) {
       console.error("Failed to load GitLab pipeline projects", error);
-      setMessage({
+      setAlertMessage({
         type: "error",
         text: "Could not load saved GitLab projects from storage.",
       });
     } finally {
       setIsHydrated(true);
     }
-  }, []);
+  }, [setAlertMessage]);
 
   useEffect(() => {
     if (!isHydrated || typeof window === "undefined") {
@@ -178,12 +107,12 @@ export default function GitLabPipelinesPage() {
     const projectId = projectIdInput.trim();
 
     if (!projectId) {
-      setMessage({ type: "error", text: "Project ID is required." });
+      setAlertMessage({ type: "error", text: "Project ID is required." });
       return;
     }
 
     if (!tokens.gitlab) {
-      setMessage({
+      setAlertMessage({
         type: "error",
         text: "GitLab token missing. Save it on the Tokens page first.",
       });
@@ -191,7 +120,7 @@ export default function GitLabPipelinesPage() {
     }
 
     setIsAdding(true);
-    setMessage(null);
+    clearAlertMessage();
 
     const resolvedBaseUrl = baseUrl.trim() || gitLabApiBaseUrl;
 
@@ -228,7 +157,7 @@ export default function GitLabPipelinesPage() {
         ];
       });
 
-      setMessage({
+      setAlertMessage({
         type: "success",
         text: `Loaded ${branches.length} branches for ${project.name}.`,
       });
@@ -236,7 +165,7 @@ export default function GitLabPipelinesPage() {
       setProjectIdInput("");
     } catch (error) {
       const text = error instanceof Error ? error.message : String(error);
-      setMessage({ type: "error", text });
+      setAlertMessage({ type: "error", text });
     } finally {
       setIsAdding(false);
     }
@@ -244,7 +173,7 @@ export default function GitLabPipelinesPage() {
 
   const handleRemoveProject = (projectId: string, projectName: string) => {
     setProjects((prev) => prev.filter((project) => project.id !== projectId));
-    setMessage({
+    setAlertMessage({
       type: "success",
       text: `Removed ${projectName || projectId} from the list.`,
     });
@@ -252,7 +181,7 @@ export default function GitLabPipelinesPage() {
 
   const handleTrigger = async (projectId: string, branchName: string) => {
     if (!tokens.gitlab) {
-      setMessage({
+      setAlertMessage({
         type: "error",
         text: "GitLab token missing. Save it on the Tokens page first.",
       });
@@ -307,7 +236,7 @@ export default function GitLabPipelinesPage() {
         })
       );
 
-      setMessage({
+      setAlertMessage({
         type: "success",
         text: `Triggered pipeline for ${branchName}.`,
       });
@@ -335,7 +264,7 @@ export default function GitLabPipelinesPage() {
         })
       );
 
-      setMessage({ type: "error", text });
+      setAlertMessage({ type: "error", text });
     }
   };
 
@@ -349,17 +278,7 @@ export default function GitLabPipelinesPage() {
           </p>
         </CardHeader>
         <CardBody className="flex flex-col gap-6">
-          {message ? (
-            <Alert
-              color={message.type === "error" ? "danger" : "success"}
-              title={
-                message.type === "error" ? "Something went wrong" : "All good"
-              }
-              variant="flat"
-            >
-              {message.text}
-            </Alert>
-          ) : null}
+          <AlertMessage message={alertMessage} />
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <Input
@@ -398,7 +317,7 @@ export default function GitLabPipelinesPage() {
         <CardHeader className="flex flex-col items-start gap-1">
           <h2 className="text-lg font-semibold">Projects</h2>
           <p className="text-sm text-default-500">
-            Trigger pipelines directly from the branch list.
+            Trigger pipelines directly from the branch list below.
           </p>
         </CardHeader>
         <CardBody className="flex flex-col gap-4">
@@ -463,7 +382,9 @@ export default function GitLabPipelinesPage() {
                                 </span>
                               )}
                             </TableCell>
-                            <TableCell>{branchStatusChip(branch)}</TableCell>
+                            <TableCell>
+                              <BranchStatusChip branch={branch} />
+                            </TableCell>
                             <TableCell>
                               <Button
                                 color="secondary"

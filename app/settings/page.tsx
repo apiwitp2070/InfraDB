@@ -71,8 +71,8 @@ export default function TokenSettingsPage() {
         <CardHeader className="flex flex-col items-start gap-1">
           <h1 className="text-xl font-semibold">Personal Access Tokens</h1>
           <p className="text-sm text-default-500">
-            Tokens live in this browser's local storage. Provide tokens with the
-            required scopes to interact with GitLab and GitHub APIs.
+            Tokens stored inside localStorage. Provide tokens with the required
+            scopes to interact with GitLab and GitHub APIs.
           </p>
         </CardHeader>
         <CardBody className="gap-6">

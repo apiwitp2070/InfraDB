@@ -1,8 +1,12 @@
-import { VariableStatus } from "@/utils/variable";
+import { VariableStatus } from "@/types/variable";
 import { Chip } from "@heroui/chip";
 import { Spinner } from "@heroui/spinner";
 
-export default function StatusChip({ status }: { status: VariableStatus }) {
+export default function VariableStatusChip({
+  status,
+}: {
+  status: VariableStatus;
+}) {
   switch (status) {
     case "pending":
       return (

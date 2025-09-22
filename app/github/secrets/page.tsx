@@ -5,38 +5,28 @@ import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Input } from "@heroui/input";
 import { Switch } from "@heroui/switch";
-import { Chip } from "@heroui/chip";
-import { Alert } from "@heroui/alert";
-import {
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
-} from "@heroui/table";
-import { Spinner } from "@heroui/spinner";
-import clsx from "clsx";
-
+import AlertMessage from "@/components/alert-message";
 import { useTokenStorage } from "@/hooks/useTokenStorage";
 import {
   githubApiBaseUrl,
   parseRepositoryInput,
   upsertGitHubSecret,
 } from "@/lib/github";
-import StatusChip from "@/components/status-chip";
-import { StatusMessage, VariableStatus, parseEnvInput } from "@/utils/variable";
+import { useAlertMessage } from "@/hooks/useAlertMessage";
+import { parseEnvInput } from "@/utils/variable";
 import VariableTable from "@/components/variable-table";
+import { VariableStatus } from "@/types/variable";
 
 export default function GitHubSecretsPage() {
   const { tokens, isReady } = useTokenStorage();
+  const alert = useAlertMessage();
+
   const [repositoryInput, setRepositoryInput] = useState("");
   const [envText, setEnvText] = useState("");
   const [skipEmpty, setSkipEmpty] = useState(true);
   const [baseUrl, setBaseUrl] = useState(githubApiBaseUrl);
   const [statuses, setStatuses] = useState<Record<string, VariableStatus>>({});
   const [isSyncing, setIsSyncing] = useState(false);
-  const [message, setMessage] = useState<StatusMessage | null>(null);
 
   const envEntries = useMemo(() => parseEnvInput(envText), [envText]);
 
@@ -55,7 +45,7 @@ export default function GitHubSecretsPage() {
     const repoRef = parseRepositoryInput(repositoryInput.trim());
 
     if (!repoRef) {
-      setMessage({
+      alert.setMessage({
         type: "error",
         text: "Repository must be in the format owner/repo.",
       });
@@ -63,7 +53,7 @@ export default function GitHubSecretsPage() {
     }
 
     if (!tokens.github) {
-      setMessage({
+      alert.setMessage({
         type: "error",
         text: "GitHub token missing. Save it on the Tokens page first.",
       });
@@ -71,7 +61,7 @@ export default function GitHubSecretsPage() {
     }
 
     if (envEntries.length === 0) {
-      setMessage({
+      alert.setMessage({
         type: "error",
         text: "Provide at least one secret in KEY=VALUE format.",
       });
@@ -79,7 +69,7 @@ export default function GitHubSecretsPage() {
     }
 
     setIsSyncing(true);
-    setMessage(null);
+    alert.clearMessage();
 
     const resolvedBaseUrl = baseUrl.trim() || githubApiBaseUrl;
 
@@ -108,7 +98,7 @@ export default function GitHubSecretsPage() {
         hasErrors = true;
         const message = error instanceof Error ? error.message : String(error);
         setStatuses((prev) => ({ ...prev, [key]: "error" }));
-        setMessage({
+        alert.setMessage({
           type: "error",
           text: `Failed for ${key}: ${message}`,
         });
@@ -116,7 +106,10 @@ export default function GitHubSecretsPage() {
     }
 
     if (!hasErrors) {
-      setMessage({ type: "success", text: "Secrets synced successfully." });
+      alert.setMessage({
+        type: "success",
+        text: "Secrets synced successfully.",
+      });
     }
 
     setIsSyncing(false);
@@ -133,21 +126,12 @@ export default function GitHubSecretsPage() {
         <CardHeader className="flex flex-col items-start gap-1">
           <h1 className="text-xl font-semibold">GitHub Secrets</h1>
           <p className="text-sm text-default-500">
-            Encrypt and upsert repository secrets using the GitHub REST API.
+            Paste variables in KEY=VALUE format. Comments (#) and blank lines
+            are ignored.
           </p>
         </CardHeader>
         <CardBody className="flex flex-col gap-6">
-          {message ? (
-            <Alert
-              color={message.type === "error" ? "danger" : "success"}
-              title={
-                message.type === "error" ? "Something went wrong" : "All good"
-              }
-              variant="flat"
-            >
-              {message.text}
-            </Alert>
-          ) : null}
+          <AlertMessage message={alert.message} />
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <Input

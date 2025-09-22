@@ -14,15 +14,3 @@ export const parseEnvInput = (input: string) => {
     })
     .filter((entry) => entry.key.length);
 };
-
-export type VariableStatus =
-  | "pending"
-  | "in-progress"
-  | "success"
-  | "error"
-  | "skipped";
-
-export type StatusMessage = {
-  type: "success" | "error";
-  text: string;
-};

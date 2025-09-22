@@ -5,32 +5,24 @@ import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Input } from "@heroui/input";
 import { Switch } from "@heroui/switch";
-import { Alert } from "@heroui/alert";
-import {
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
-} from "@heroui/table";
-import clsx from "clsx";
-
-import StatusChip from "@/components/status-chip";
+import AlertMessage from "@/components/alert-message";
 import { useTokenStorage } from "@/hooks/useTokenStorage";
 import { gitLabApiBaseUrl, upsertGitLabVariable } from "@/lib/gitlab";
-import { VariableStatus, StatusMessage, parseEnvInput } from "@/utils/variable";
+import { useAlertMessage } from "@/hooks/useAlertMessage";
+import { parseEnvInput } from "@/utils/variable";
 import VariableTable from "@/components/variable-table";
+import { VariableStatus } from "@/types/variable";
 
 export default function GitLabVariablesPage() {
   const { tokens, isReady } = useTokenStorage();
+  const alert = useAlertMessage();
+
   const [projectId, setProjectId] = useState("");
   const [envText, setEnvText] = useState("");
   const [skipEmpty, setSkipEmpty] = useState(true);
   const [baseUrl, setBaseUrl] = useState(gitLabApiBaseUrl);
   const [statuses, setStatuses] = useState<Record<string, VariableStatus>>({});
   const [isSyncing, setIsSyncing] = useState(false);
-  const [message, setMessage] = useState<StatusMessage | null>(null);
 
   const envEntries = useMemo(() => parseEnvInput(envText), [envText]);
 
@@ -47,12 +39,12 @@ export default function GitLabVariablesPage() {
 
   const handleSync = async () => {
     if (!projectId.trim()) {
-      setMessage({ type: "error", text: "Project ID is required." });
+      alert.setMessage({ type: "error", text: "Project ID is required." });
       return;
     }
 
     if (!tokens.gitlab) {
-      setMessage({
+      alert.setMessage({
         type: "error",
         text: "GitLab token missing. Save it on the Tokens page first.",
       });
@@ -60,7 +52,7 @@ export default function GitLabVariablesPage() {
     }
 
     if (envEntries.length === 0) {
-      setMessage({
+      alert.setMessage({
         type: "error",
         text: "Provide at least one environment variable.",
       });
@@ -68,7 +60,7 @@ export default function GitLabVariablesPage() {
     }
 
     setIsSyncing(true);
-    setMessage(null);
+    alert.clearMessage();
 
     const resolvedBaseUrl = baseUrl.trim() || gitLabApiBaseUrl;
 
@@ -94,7 +86,7 @@ export default function GitLabVariablesPage() {
         hasErrors = true;
         const message = error instanceof Error ? error.message : String(error);
         setStatuses((prev) => ({ ...prev, [key]: "error" }));
-        setMessage({
+        alert.setMessage({
           type: "error",
           text: `Failed for ${key}: ${message}`,
         });
@@ -102,7 +94,10 @@ export default function GitLabVariablesPage() {
     }
 
     if (!hasErrors) {
-      setMessage({ type: "success", text: "Variables synced successfully." });
+      alert.setMessage({
+        type: "success",
+        text: "Variables synced successfully.",
+      });
     }
 
     setIsSyncing(false);
@@ -124,17 +119,7 @@ export default function GitLabVariablesPage() {
           </p>
         </CardHeader>
         <CardBody className="flex flex-col gap-6">
-          {message ? (
-            <Alert
-              color={message.type === "error" ? "danger" : "success"}
-              title={
-                message.type === "error" ? "Something went wrong" : "All good"
-              }
-              variant="flat"
-            >
-              {message.text}
-            </Alert>
-          ) : null}
+          <AlertMessage message={alert.message} />
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <Input
