@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Accordion, AccordionItem } from "@heroui/accordion";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
-import { Input } from "@heroui/input";
 import { Chip } from "@heroui/chip";
-import { Accordion, AccordionItem } from "@heroui/accordion";
+import { Input } from "@heroui/input";
 import {
   Table,
   TableBody,
@@ -16,20 +16,22 @@ import {
 } from "@heroui/table";
 
 import AlertMessage from "@/components/alert-message";
+import BranchStatusChip from "@/components/branch-status-chip";
 import { useAlertMessage } from "@/hooks/useAlertMessage";
 import { useTokenStorage } from "@/hooks/useTokenStorage";
 import {
   fetchGitLabBranches,
   fetchGitLabProject,
   gitLabApiBaseUrl,
+  searchGitLabProjects,
   triggerGitLabPipeline,
+  type GitLabProject,
 } from "@/lib/gitlab";
 import {
+  BranchState,
   PipelineProjectState,
   StoredProject,
-  BranchState,
 } from "@/types/pipeline";
-import BranchStatusChip from "@/components/branch-status-chip";
 
 const STORAGE_KEY = "gitlab_pipeline_projects";
 
@@ -45,6 +47,10 @@ export default function GitLabPipelinesPage() {
   const [projects, setProjects] = useState<PipelineProjectState[]>([]);
   const [isHydrated, setIsHydrated] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchResults, setSearchResults] = useState<GitLabProject[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [loadingProjectId, setLoadingProjectId] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -102,6 +108,56 @@ export default function GitLabPipelinesPage() {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(storedProjects));
   }, [projects, isHydrated]);
 
+  const processProjectLoad = async (
+    projectId: string,
+    existingProject?: GitLabProject
+  ) => {
+    if (!tokens.gitlab) {
+      throw new Error(
+        "GitLab token missing. Save it on the Settings page first."
+      );
+    }
+
+    const resolvedBaseUrl = baseUrl.trim() || gitLabApiBaseUrl;
+    const projectData =
+      existingProject ??
+      (await fetchGitLabProject({
+        projectId,
+        token: tokens.gitlab,
+        baseUrl: resolvedBaseUrl,
+      }));
+
+    const branches = await fetchGitLabBranches({
+      projectId,
+      token: tokens.gitlab,
+      baseUrl: resolvedBaseUrl,
+    });
+
+    const branchStates: BranchState[] = branches.map((branch) => ({
+      name: branch.name,
+      default: branch.default,
+      status: "idle",
+    }));
+
+    setProjects((prev) => {
+      const next = prev.filter((item) => item.id !== String(projectData.id));
+      return [
+        ...next,
+        {
+          id: String(projectData.id),
+          name: projectData.name,
+          namespace: projectData.name_with_namespace,
+          branches: branchStates,
+        },
+      ];
+    });
+
+    setAlertMessage({
+      type: "success",
+      text: `Loaded ${branchStates.length} branches for ${projectData.name}.`,
+    });
+  };
+
   const handleAddProject = async () => {
     const projectId = projectIdInput.trim();
 
@@ -121,46 +177,8 @@ export default function GitLabPipelinesPage() {
     setIsAdding(true);
     clearAlertMessage();
 
-    const resolvedBaseUrl = baseUrl.trim() || gitLabApiBaseUrl;
-
     try {
-      const [project, branches] = await Promise.all([
-        fetchGitLabProject({
-          projectId,
-          token: tokens.gitlab,
-          baseUrl: resolvedBaseUrl,
-        }),
-        fetchGitLabBranches({
-          projectId,
-          token: tokens.gitlab,
-          baseUrl: resolvedBaseUrl,
-        }),
-      ]);
-
-      const branchStates: BranchState[] = branches.map((branch) => ({
-        name: branch.name,
-        default: branch.default,
-        status: "idle",
-      }));
-
-      setProjects((prev) => {
-        const next = prev.filter((item) => item.id !== String(project.id));
-        return [
-          ...next,
-          {
-            id: String(project.id),
-            name: project.name,
-            namespace: project.name_with_namespace,
-            branches: branchStates,
-          },
-        ];
-      });
-
-      setAlertMessage({
-        type: "success",
-        text: `Loaded ${branches.length} branches for ${project.name}.`,
-      });
-
+      await processProjectLoad(projectId);
       setProjectIdInput("");
     } catch (error) {
       const text = error instanceof Error ? error.message : String(error);
@@ -267,6 +285,77 @@ export default function GitLabPipelinesPage() {
     }
   };
 
+  const handleSearchProjects = async () => {
+    const query = searchTerm.trim();
+
+    if (!query) {
+      setAlertMessage({
+        type: "error",
+        text: "Enter a project name to search.",
+      });
+      return;
+    }
+
+    if (!tokens.gitlab) {
+      setAlertMessage({
+        type: "error",
+        text: "GitLab token missing. Save it on the Tokens page first.",
+      });
+      return;
+    }
+
+    setIsSearching(true);
+    clearAlertMessage();
+
+    const resolvedBaseUrl = baseUrl.trim() || gitLabApiBaseUrl;
+
+    try {
+      const results = await searchGitLabProjects({
+        query,
+        token: tokens.gitlab,
+        baseUrl: resolvedBaseUrl,
+      });
+
+      setSearchResults(results);
+
+      if (results.length === 0) {
+        setAlertMessage({
+          type: "error",
+          text: `No projects matched “${query}”.`,
+        });
+      }
+    } catch (error) {
+      const text = error instanceof Error ? error.message : String(error);
+      setAlertMessage({ type: "error", text });
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleSelectProject = async (project: GitLabProject) => {
+    if (!tokens.gitlab) {
+      setAlertMessage({
+        type: "error",
+        text: "GitLab token missing. Save it on the Tokens page first.",
+      });
+      return;
+    }
+
+    const projectId = String(project.id);
+    setLoadingProjectId(projectId);
+    clearAlertMessage();
+
+    try {
+      await processProjectLoad(projectId, project);
+      setSearchResults((prev) => prev.filter((item) => item.id !== project.id));
+    } catch (error) {
+      const text = error instanceof Error ? error.message : String(error);
+      setAlertMessage({ type: "error", text });
+    } finally {
+      setLoadingProjectId(null);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <Card shadow="none">
@@ -279,10 +368,12 @@ export default function GitLabPipelinesPage() {
         <CardBody className="flex flex-col gap-6">
           <AlertMessage message={alertMessage} />
 
+          <p>Add your project to the list with methods below</p>
+
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <Input
               isRequired
-              label="Project ID"
+              label="Enter Project ID"
               labelPlacement="outside"
               placeholder="123456"
               value={projectIdInput}
@@ -308,6 +399,68 @@ export default function GitLabPipelinesPage() {
             >
               Add project
             </Button>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 md:flex-row md:items-end">
+              <Input
+                className="md:flex-1"
+                label="Or search GitLab projects"
+                labelPlacement="outside"
+                placeholder="Project name"
+                value={searchTerm}
+                onValueChange={setSearchTerm}
+              />
+              <Button
+                className="md:w-auto"
+                color="primary"
+                isDisabled={!isReady || !tokens.gitlab}
+                isLoading={isSearching}
+                onPress={handleSearchProjects}
+              >
+                Search
+              </Button>
+            </div>
+
+            {searchResults.length > 0 ? (
+              <Table removeWrapper aria-label="GitLab project search results">
+                <TableHeader>
+                  <TableColumn>Project</TableColumn>
+                  <TableColumn>Namespace</TableColumn>
+                  <TableColumn className="w-32">Action</TableColumn>
+                </TableHeader>
+                <TableBody>
+                  {searchResults.map((project) => {
+                    const projectId = String(project.id);
+                    const alreadyAdded = projects.some(
+                      (item) => item.id === projectId
+                    );
+
+                    return (
+                      <TableRow key={projectId}>
+                        <TableCell className="font-medium">
+                          {project.name}
+                        </TableCell>
+                        <TableCell className="text-sm text-default-500">
+                          {project.name_with_namespace}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            color="primary"
+                            isLoading={loadingProjectId === projectId}
+                            size="sm"
+                            variant="flat"
+                            onPress={() => handleSelectProject(project)}
+                          >
+                            {alreadyAdded ? "Update" : "Add"}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            ) : null}
           </div>
         </CardBody>
       </Card>

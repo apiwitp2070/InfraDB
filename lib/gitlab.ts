@@ -152,6 +152,36 @@ export const triggerGitLabPipeline = async ({
   });
 };
 
+type SearchProjectsInput = {
+  query: string;
+  token: string;
+  baseUrl?: string;
+  membership?: boolean;
+  perPage?: number;
+};
+
+export const searchGitLabProjects = async ({
+  query,
+  token,
+  baseUrl,
+  membership = true,
+  perPage = 20,
+}: SearchProjectsInput) => {
+  const params = new URLSearchParams({
+    search: query,
+    simple: "true",
+    per_page: String(perPage),
+  });
+
+  if (membership) {
+    params.set("membership", "true");
+  }
+
+  return request<GitLabProject[]>(`/projects?${params.toString()}`, token, {
+    baseUrl,
+  });
+};
+
 export const isGitLabNotFoundError = (error: unknown) => {
   if (error instanceof Error) {
     return /404/.test(error.message);
