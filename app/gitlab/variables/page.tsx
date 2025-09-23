@@ -2,22 +2,31 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@heroui/button";
+import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Input } from "@heroui/input";
+import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/table";
 import { Switch } from "@heroui/switch";
-import { Divider } from "@heroui/divider";
 
 import AlertMessage from "@/components/alert-message";
-import { useTokenStorage } from "@/hooks/useTokenStorage";
-import { useApiSettings } from "@/hooks/useApiSettings";
-import { gitLabApiBaseUrl, upsertGitLabVariable } from "@/lib/gitlab";
-import { useAlertMessage } from "@/hooks/useAlertMessage";
-import { parseEnvInput } from "@/utils/variable";
+import GitlabProjectSearch from "@/components/gitlab-project-search";
 import VariableTable from "@/components/variable-table";
+import { useAlertMessage } from "@/hooks/useAlertMessage";
+import { useApiSettings } from "@/hooks/useApiSettings";
+import { useGitlabProjects } from "@/hooks/useGitlabProjects";
+import { useTokenStorage } from "@/hooks/useTokenStorage";
+import {
+  gitLabApiBaseUrl,
+  loadGitLabProjectWithBranches,
+  upsertGitLabVariable,
+  type GitLabProject,
+} from "@/lib/gitlab";
+import { parseEnvInput } from "@/utils/variable";
 import { VariableStatus } from "@/types/variable";
 
 export default function GitLabVariablesPage() {
   const { tokens, isReady } = useTokenStorage();
   const { settings: apiSettings } = useApiSettings();
+  const { projects, upsertProject } = useGitlabProjects();
   const alert = useAlertMessage();
 
   const [projectId, setProjectId] = useState("");
@@ -39,6 +48,9 @@ export default function GitLabVariablesPage() {
     setStatuses(nextStatuses);
   }, [envEntries, skipEmpty]);
 
+  const resolvedBaseUrl =
+    apiSettings.gitlabBaseUrl.trim() || gitLabApiBaseUrl;
+
   const handleSync = async () => {
     if (!projectId.trim()) {
       alert.setMessage({ type: "error", text: "Project ID is required." });
@@ -48,7 +60,7 @@ export default function GitLabVariablesPage() {
     if (!tokens.gitlab) {
       alert.setMessage({
         type: "error",
-        text: "GitLab token missing. Save it on the Tokens page first.",
+        text: "GitLab token missing. Save it on the Settings page first.",
       });
       return;
     }
@@ -63,9 +75,6 @@ export default function GitLabVariablesPage() {
 
     setIsSyncing(true);
     alert.clearMessage();
-
-    const resolvedBaseUrl =
-      apiSettings.gitlabBaseUrl.trim() || gitLabApiBaseUrl;
 
     let hasErrors = false;
 
@@ -97,13 +106,35 @@ export default function GitLabVariablesPage() {
     }
 
     if (!hasErrors) {
-      alert.setMessage({
-        type: "success",
-        text: "Variables synced successfully.",
-      });
+      alert.setMessage({ type: "success", text: "Variables synced successfully." });
     }
 
     setIsSyncing(false);
+  };
+
+  const handleProjectSelect = (selectedId: string) => {
+    setProjectId(selectedId);
+  };
+
+  const handleProjectAdd = async (project: GitLabProject) => {
+    if (!tokens.gitlab) {
+      throw new Error(
+        "GitLab token missing. Save it on the Settings page first.",
+      );
+    }
+
+    const projectData = await loadGitLabProjectWithBranches({
+      projectId: String(project.id),
+      token: tokens.gitlab,
+      baseUrl: resolvedBaseUrl,
+      existingProject: project,
+    });
+
+    upsertProject(projectData);
+    alert.setMessage({
+      type: "success",
+      text: `Loaded ${projectData.branches.length} branches for ${projectData.name}.`,
+    });
   };
 
   const canSync =
@@ -113,60 +144,113 @@ export default function GitLabVariablesPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col items-start gap-1">
-        <h1 className="text-xl font-semibold">GitLab Variables</h1>
-        <p className="text-sm text-default-500">
-          Paste variables in KEY=VALUE format. Comments (#) and blank lines are
-          ignored.
-        </p>
-      </div>
+      <Card shadow="none">
+        <CardHeader className="flex flex-col items-start gap-1">
+          <h1 className="text-xl font-semibold">GitLab Variables</h1>
+          <p className="text-sm text-default-500">
+            Manage environment variables via the GitLab REST API.
+          </p>
+        </CardHeader>
+        <CardBody className="flex flex-col gap-6">
+          <AlertMessage message={alert.message} />
 
-      <Divider />
+          <section className="flex flex-col gap-3">
+            <h2 className="text-base font-medium">Saved GitLab projects</h2>
+            {projects.length ? (
+              <Table removeWrapper aria-label="Saved GitLab projects">
+                <TableHeader>
+                  <TableColumn>Name</TableColumn>
+                  <TableColumn>Project ID</TableColumn>
+                  <TableColumn className="w-32">Action</TableColumn>
+                </TableHeader>
+                <TableBody>
+                  {projects.map((project) => (
+                    <TableRow key={project.id}>
+                      <TableCell>{project.name}</TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {project.id}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="flat"
+                          onPress={() => handleProjectSelect(project.id)}
+                        >
+                          Select
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <p className="text-sm text-default-500">
+                No projects saved yet. Add one below to speed up future updates.
+              </p>
+            )}
+          </section>
 
-      <AlertMessage message={alert.message} />
+          <section className="flex flex-col gap-4">
+            <header>
+              <h2 className="text-base font-medium">GitLab Token & Project</h2>
+              <p className="text-xs text-default-500">
+                Provide a project ID manually or pick one from the list above.
+              </p>
+            </header>
+            <Input
+              isRequired
+              label="Project ID"
+              labelPlacement="outside"
+              placeholder="123456"
+              value={projectId}
+              onValueChange={setProjectId}
+            />
+          </section>
 
-      <section className="flex flex-col gap-6">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <Input
-            isRequired
-            label="Project ID"
-            labelPlacement="outside"
-            placeholder="123456"
-            value={projectId}
-            onValueChange={setProjectId}
+          <GitlabProjectSearch
+            baseUrl={apiSettings.gitlabBaseUrl}
+            clearAlertMessage={alert.clearMessage}
+            existingProjectIds={projects.map((project) => project.id)}
+            gitlabToken={tokens.gitlab}
+            setAlertMessage={alert.setMessage}
+            onProjectAdd={handleProjectAdd}
           />
-        </div>
 
-        <div className="flex flex-col gap-3">
-          <label className="flex flex-col gap-2 text-sm">
-            <span className="font-medium">Environment Variables</span>
+          <section className="flex flex-col gap-4">
+            <header>
+              <h2 className="text-base font-medium">Environment Variables</h2>
+              <p className="text-xs text-default-500">
+                Paste variables in KEY=VALUE format. Comments (#) and blank lines
+                are ignored.
+              </p>
+            </header>
             <textarea
               className="min-h-[200px] rounded-medium border border-default-200 bg-content1 px-3 py-2 font-mono text-sm outline-none focus-visible:border-primary"
               placeholder={`API_URL=https://example.com\nAPI_KEY=123456`}
               value={envText}
               onChange={(event) => setEnvText(event.target.value)}
             />
-          </label>
-          <Switch isSelected={skipEmpty} onValueChange={setSkipEmpty}>
-            Skip entries with empty values
-          </Switch>
-        </div>
+            <Switch isSelected={skipEmpty} onValueChange={setSkipEmpty}>
+              Skip entries with empty values
+            </Switch>
+          </section>
 
-        {envEntries.length > 0 ? (
-          <VariableTable data={envEntries} statuses={statuses} />
-        ) : null}
+          {envEntries.length > 0 ? (
+            <VariableTable data={envEntries} statuses={statuses} />
+          ) : null}
 
-        <div className="flex items-center justify-end gap-3">
-          <Button
-            color="primary"
-            isDisabled={!isReady || !canSync || isSyncing}
-            isLoading={isSyncing}
-            onPress={handleSync}
-          >
-            Sync variables
-          </Button>
-        </div>
-      </section>
+          <div className="flex items-center justify-end gap-3">
+            <Button
+              color="primary"
+              isDisabled={!isReady || !canSync || isSyncing}
+              isLoading={isSyncing}
+              onPress={handleSync}
+            >
+              Sync variables
+            </Button>
+          </div>
+        </CardBody>
+      </Card>
     </div>
   );
 }

@@ -5,6 +5,10 @@ export const siteConfig = {
   description: "Helper tools for GitLab and GitHub REST APIs.",
   navItems: [
     {
+      label: "GitLab Projects",
+      href: "/gitlab/project",
+    },
+    {
       label: "GitLab Variables",
       href: "/gitlab/variables",
     },
@@ -18,6 +22,10 @@ export const siteConfig = {
     },
   ],
   navMenuItems: [
+    {
+      label: "GitLab Projects",
+      href: "/gitlab/project",
+    },
     {
       label: "GitLab Variables",
       href: "/gitlab/variables",
@@ -39,6 +47,11 @@ export const siteConfig = {
     {
       label: "GitLab",
       items: [
+        {
+          label: "Projects",
+          href: "/gitlab/project",
+          color: "bg-orange-200",
+        },
         {
           label: "Variables",
           href: "/gitlab/variables",

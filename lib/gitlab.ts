@@ -1,3 +1,5 @@
+import type { BranchState, PipelineProjectState } from "@/types/pipeline";
+
 export type GitLabVariablePayload = {
   key: string;
   value: string;
@@ -180,6 +182,49 @@ export const searchGitLabProjects = async ({
   return request<GitLabProject[]>(`/projects?${params.toString()}`, token, {
     baseUrl,
   });
+};
+
+type LoadProjectWithBranchesInput = {
+  projectId: string;
+  token: string;
+  baseUrl?: string;
+  existingProject?: GitLabProject;
+};
+
+export const loadGitLabProjectWithBranches = async ({
+  projectId,
+  token,
+  baseUrl,
+  existingProject,
+}: LoadProjectWithBranchesInput): Promise<PipelineProjectState> => {
+  const resolvedBaseUrl = baseUrl?.trim() || DEFAULT_GITLAB_API;
+
+  const project =
+    existingProject ??
+    (await fetchGitLabProject({
+      projectId,
+      token,
+      baseUrl: resolvedBaseUrl,
+    }));
+
+  const branches = await fetchGitLabBranches({
+    projectId,
+    token,
+    baseUrl: resolvedBaseUrl,
+  });
+
+  const branchStates: BranchState[] = branches.map((branch) => ({
+    name: branch.name,
+    default: branch.default,
+    status: "idle",
+  }));
+
+  return {
+    id: String(project.id),
+    name: project.name,
+    namespace: project.name_with_namespace,
+    branches: branchStates,
+  };
 };
 
 export const isGitLabNotFoundError = (error: unknown) => {

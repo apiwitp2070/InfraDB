@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Accordion, AccordionItem } from "@heroui/accordion";
 import { Button } from "@heroui/button";
+import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Chip } from "@heroui/chip";
-import { Divider } from "@heroui/divider";
 import { Input } from "@heroui/input";
 import {
   Table,
@@ -17,24 +17,17 @@ import {
 
 import AlertMessage from "@/components/alert-message";
 import BranchStatusChip from "@/components/branch-status-chip";
+import GitlabProjectSearch from "@/components/gitlab-project-search";
 import { useAlertMessage } from "@/hooks/useAlertMessage";
 import { useApiSettings } from "@/hooks/useApiSettings";
+import { useGitlabProjects } from "@/hooks/useGitlabProjects";
 import { useTokenStorage } from "@/hooks/useTokenStorage";
 import {
-  fetchGitLabBranches,
-  fetchGitLabProject,
   gitLabApiBaseUrl,
-  searchGitLabProjects,
+  loadGitLabProjectWithBranches,
   triggerGitLabPipeline,
   type GitLabProject,
 } from "@/lib/gitlab";
-import {
-  BranchState,
-  PipelineProjectState,
-  StoredProject,
-} from "@/types/pipeline";
-
-const STORAGE_KEY = "gitlab_pipeline_projects";
 
 export default function GitLabPipelinesPage() {
   const { tokens, isReady } = useTokenStorage();
@@ -44,72 +37,15 @@ export default function GitLabPipelinesPage() {
     clearMessage: clearAlertMessage,
   } = useAlertMessage();
   const { settings: apiSettings } = useApiSettings();
+  const { projects, setProjects, upsertProject, removeProject } =
+    useGitlabProjects();
+
   const [projectIdInput, setProjectIdInput] = useState("");
-  const [projects, setProjects] = useState<PipelineProjectState[]>([]);
-  const [isHydrated, setIsHydrated] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [searchResults, setSearchResults] = useState<GitLabProject[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [loadingProjectId, setLoadingProjectId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
+  const resolvedBaseUrl = apiSettings.gitlabBaseUrl.trim() || gitLabApiBaseUrl;
 
-    try {
-      const stored = window.localStorage.getItem(STORAGE_KEY);
-
-      if (!stored) {
-        setIsHydrated(true);
-        return;
-      }
-
-      const parsed = JSON.parse(stored) as StoredProject[];
-
-      const revived = parsed.map<PipelineProjectState>((project) => ({
-        id: project.id,
-        name: project.name,
-        namespace: project.namespace,
-        branches: project.branches.map<BranchState>((branch) => ({
-          name: branch.name,
-          default: branch.default,
-          status: "idle",
-        })),
-      }));
-
-      setProjects(revived);
-    } catch (error) {
-      console.error("Failed to load GitLab pipeline projects", error);
-      setAlertMessage({
-        type: "error",
-        text: "Could not load saved GitLab projects from storage.",
-      });
-    } finally {
-      setIsHydrated(true);
-    }
-  }, [setAlertMessage]);
-
-  useEffect(() => {
-    if (!isHydrated || typeof window === "undefined") {
-      return;
-    }
-
-    const storedProjects: StoredProject[] = projects.map((project) => ({
-      id: project.id,
-      name: project.name,
-      namespace: project.namespace,
-      branches: project.branches.map((branch) => ({
-        name: branch.name,
-        default: branch.default,
-      })),
-    }));
-
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(storedProjects));
-  }, [projects, isHydrated]);
-
-  const processProjectLoad = async (
+  const loadProject = async (
     projectId: string,
     existingProject?: GitLabProject
   ) => {
@@ -119,44 +55,18 @@ export default function GitLabPipelinesPage() {
       );
     }
 
-    const resolvedBaseUrl =
-      apiSettings.gitlabBaseUrl.trim() || gitLabApiBaseUrl;
-    const projectData =
-      existingProject ??
-      (await fetchGitLabProject({
-        projectId,
-        token: tokens.gitlab,
-        baseUrl: resolvedBaseUrl,
-      }));
-
-    const branches = await fetchGitLabBranches({
+    const project = await loadGitLabProjectWithBranches({
       projectId,
       token: tokens.gitlab,
       baseUrl: resolvedBaseUrl,
+      existingProject,
     });
 
-    const branchStates: BranchState[] = branches.map((branch) => ({
-      name: branch.name,
-      default: branch.default,
-      status: "idle",
-    }));
-
-    setProjects((prev) => {
-      const next = prev.filter((item) => item.id !== String(projectData.id));
-      return [
-        ...next,
-        {
-          id: String(projectData.id),
-          name: projectData.name,
-          namespace: projectData.name_with_namespace,
-          branches: branchStates,
-        },
-      ];
-    });
+    upsertProject(project);
 
     setAlertMessage({
       type: "success",
-      text: `Loaded ${branchStates.length} branches for ${projectData.name}.`,
+      text: `Loaded ${project.branches.length} branches for ${project.name}.`,
     });
   };
 
@@ -168,19 +78,11 @@ export default function GitLabPipelinesPage() {
       return;
     }
 
-    if (!tokens.gitlab) {
-      setAlertMessage({
-        type: "error",
-        text: "GitLab token missing. Save it on the Tokens page first.",
-      });
-      return;
-    }
-
     setIsAdding(true);
     clearAlertMessage();
 
     try {
-      await processProjectLoad(projectId);
+      await loadProject(projectId);
       setProjectIdInput("");
     } catch (error) {
       const text = error instanceof Error ? error.message : String(error);
@@ -191,7 +93,7 @@ export default function GitLabPipelinesPage() {
   };
 
   const handleRemoveProject = (projectId: string, projectName: string) => {
-    setProjects((prev) => prev.filter((project) => project.id !== projectId));
+    removeProject(projectId);
     setAlertMessage({
       type: "success",
       text: `Removed ${projectName || projectId} from the list.`,
@@ -202,13 +104,12 @@ export default function GitLabPipelinesPage() {
     if (!tokens.gitlab) {
       setAlertMessage({
         type: "error",
-        text: "GitLab token missing. Save it on the Tokens page first.",
+        text: "GitLab token missing. Save it on the Settings page first.",
       });
       return;
     }
 
-    const resolvedBaseUrl =
-      apiSettings.gitlabBaseUrl.trim() || gitLabApiBaseUrl;
+    const pipelineBaseUrl = resolvedBaseUrl;
 
     setProjects((prev) =>
       prev.map((project) => {
@@ -232,7 +133,7 @@ export default function GitLabPipelinesPage() {
         projectId,
         ref: branchName,
         token: tokens.gitlab,
-        baseUrl: resolvedBaseUrl,
+        baseUrl: pipelineBaseUrl,
       });
 
       setProjects((prev) =>
@@ -273,11 +174,7 @@ export default function GitLabPipelinesPage() {
             ...project,
             branches: project.branches.map((branch) =>
               branch.name === branchName
-                ? {
-                    ...branch,
-                    status: "error",
-                    error: text,
-                  }
+                ? { ...branch, status: "error", error: text }
                 : branch
             ),
           };
@@ -288,278 +185,152 @@ export default function GitLabPipelinesPage() {
     }
   };
 
-  const handleSearchProjects = async () => {
-    const query = searchTerm.trim();
-
-    if (!query) {
-      setAlertMessage({
-        type: "error",
-        text: "Enter a project name to search.",
-      });
-      return;
-    }
-
-    if (!tokens.gitlab) {
-      setAlertMessage({
-        type: "error",
-        text: "GitLab token missing. Save it on the Tokens page first.",
-      });
-      return;
-    }
-
-    setIsSearching(true);
-    clearAlertMessage();
-
-    const resolvedBaseUrl =
-      apiSettings.gitlabBaseUrl.trim() || gitLabApiBaseUrl;
-
-    try {
-      const results = await searchGitLabProjects({
-        query,
-        token: tokens.gitlab,
-        baseUrl: resolvedBaseUrl,
-      });
-
-      setSearchResults(results);
-
-      if (results.length === 0) {
-        setAlertMessage({
-          type: "error",
-          text: `No projects matched “${query}”.`,
-        });
-      }
-    } catch (error) {
-      const text = error instanceof Error ? error.message : String(error);
-      setAlertMessage({ type: "error", text });
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  const handleSelectProject = async (project: GitLabProject) => {
-    if (!tokens.gitlab) {
-      setAlertMessage({
-        type: "error",
-        text: "GitLab token missing. Save it on the Tokens page first.",
-      });
-      return;
-    }
-
-    const projectId = String(project.id);
-    setLoadingProjectId(projectId);
-    clearAlertMessage();
-
-    try {
-      await processProjectLoad(projectId, project);
-      setSearchResults((prev) => prev.filter((item) => item.id !== project.id));
-    } catch (error) {
-      const text = error instanceof Error ? error.message : String(error);
-      setAlertMessage({ type: "error", text });
-    } finally {
-      setLoadingProjectId(null);
-    }
-  };
-
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col items-start gap-1">
-        <h1 className="text-xl font-bold">GitLab Pipelines</h1>
-        <p className="text-sm text-default-500">
-          Load projects, browse branches, and trigger pipelines instantly.
-        </p>
-      </div>
-
-      <Divider />
-
-      <AlertMessage message={alertMessage} />
-
-      <section className="flex flex-col gap-6">
-        <div>
-          <h2 className="font-semibold">Add Project</h2>
+      <Card shadow="none">
+        <CardHeader className="flex flex-col items-start gap-1">
+          <h1 className="text-xl font-semibold">GitLab Pipelines</h1>
           <p className="text-sm text-default-500">
-            You can add project to workspace with following methods
+            Load projects, browse branches, and trigger pipelines instantly.
           </p>
-        </div>
+        </CardHeader>
+        <CardBody className="flex flex-col gap-6">
+          <AlertMessage message={alertMessage} />
 
-        <div className="flex flex-col gap-3 md:flex-row md:items-end">
-          <Input
-            className="w-full md:w-1/2"
-            label="Add project directly from project ID"
-            labelPlacement="outside"
-            placeholder="123456"
-            value={projectIdInput}
-            onValueChange={setProjectIdInput}
-          />
-          <Button
-            className="md:w-auto"
-            color="primary"
-            isDisabled={
-              !isReady || !projectIdInput.trim().length || !tokens.gitlab
-            }
-            isLoading={isAdding}
-            onPress={handleAddProject}
-          >
-            Add project
-          </Button>
-        </div>
+          <p>Add your project to the list with methods below.</p>
 
-        <div className="flex flex-col gap-3">
-          <div className="flex flex-col gap-3 md:flex-row md:items-end">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <Input
-              className="w-full md:w-1/2"
-              label="Or search GitLab projects"
+              isRequired
+              label="Project ID"
               labelPlacement="outside"
-              placeholder="Project name"
-              value={searchTerm}
-              onValueChange={setSearchTerm}
+              placeholder="123456"
+              value={projectIdInput}
+              onValueChange={setProjectIdInput}
             />
-            <Button
-              className="md:w-auto"
-              color="primary"
-              isDisabled={!isReady || !tokens.gitlab}
-              isLoading={isSearching}
-              onPress={handleSearchProjects}
-            >
-              Search
-            </Button>
+            <div className="flex items-end justify-end">
+              <Button
+                color="primary"
+                isDisabled={
+                  !isReady || !projectIdInput.trim().length || !tokens.gitlab
+                }
+                isLoading={isAdding}
+                onPress={handleAddProject}
+              >
+                Add project
+              </Button>
+            </div>
           </div>
 
-          {searchResults.length > 0 ? (
-            <Table removeWrapper aria-label="GitLab project search results">
-              <TableHeader>
-                <TableColumn>Project</TableColumn>
-                <TableColumn>Namespace</TableColumn>
-                <TableColumn className="w-32">Action</TableColumn>
-              </TableHeader>
-              <TableBody>
-                {searchResults.map((project) => {
-                  const projectId = String(project.id);
-                  const alreadyAdded = projects.some(
-                    (item) => item.id === projectId
-                  );
+          <GitlabProjectSearch
+            baseUrl={apiSettings.gitlabBaseUrl}
+            clearAlertMessage={clearAlertMessage}
+            existingProjectIds={projects.map((project) => project.id)}
+            gitlabToken={tokens.gitlab}
+            setAlertMessage={setAlertMessage}
+            onProjectAdd={async (project) => {
+              await loadProject(String(project.id), project);
+            }}
+          />
+        </CardBody>
+      </Card>
 
-                  return (
-                    <TableRow key={projectId}>
-                      <TableCell className="font-medium">
-                        {project.name}
-                      </TableCell>
-                      <TableCell className="text-sm text-default-500">
-                        {project.name_with_namespace}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          color="primary"
-                          isLoading={loadingProjectId === projectId}
-                          size="sm"
-                          variant="flat"
-                          onPress={() => handleSelectProject(project)}
-                        >
-                          {alreadyAdded ? "Update" : "Add"}
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          ) : null}
-        </div>
-      </section>
-
-      <div className="flex flex-col items-start gap-1">
-        <h2 className="text-lg font-semibold">Projects</h2>
-        <p className="text-sm text-default-500">
-          Trigger pipelines directly from the branch list below.
-        </p>
-      </div>
-      <section className="flex flex-col gap-4">
-        {projects.length === 0 ? (
+      <Card shadow="none">
+        <CardHeader className="flex flex-col items-start gap-1">
+          <h2 className="text-lg font-semibold">Projects</h2>
           <p className="text-sm text-default-500">
-            Add a project to list available branches and trigger pipelines.
+            Trigger pipelines directly from the branch list below.
           </p>
-        ) : (
-          <Accordion selectionMode="multiple" variant="bordered">
-            {projects.map((project) => (
-              <AccordionItem
-                key={project.id}
-                title={project.name}
-                subtitle={project.namespace}
-              >
-                <div className="flex flex-col gap-4">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex flex-wrap items-center gap-3 text-xs text-default-500">
-                      <span>Project ID: {project.id}</span>
-                      <span>{project.branches.length} branches</span>
+        </CardHeader>
+        <CardBody className="flex flex-col gap-4">
+          {projects.length === 0 ? (
+            <p className="text-sm text-default-500">
+              Add a project to list available branches and trigger pipelines.
+            </p>
+          ) : (
+            <Accordion selectionMode="multiple" variant="bordered">
+              {projects.map((project) => (
+                <AccordionItem
+                  key={project.id}
+                  subtitle={project.namespace}
+                  title={project.name}
+                >
+                  <div className="flex flex-col gap-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex flex-wrap items-center gap-3 text-xs text-default-500">
+                        <span>Project ID: {project.id}</span>
+                        <span>{project.branches.length} branches</span>
+                      </div>
+                      <Button
+                        color="danger"
+                        size="sm"
+                        variant="light"
+                        onPress={() => {
+                          handleRemoveProject(project.id, project.name);
+                        }}
+                      >
+                        Remove project
+                      </Button>
                     </div>
-                    <Button
-                      color="danger"
-                      size="sm"
-                      variant="light"
-                      onPress={() => {
-                        handleRemoveProject(project.id, project.name);
-                      }}
+                    <Table
+                      removeWrapper
+                      aria-label={`Branches for ${project.name}`}
                     >
-                      Remove project
-                    </Button>
-                  </div>
-                  <Table
-                    removeWrapper
-                    aria-label={`Branches for ${project.name}`}
-                  >
-                    <TableHeader>
-                      <TableColumn>Branch</TableColumn>
-                      <TableColumn className="w-24">Default</TableColumn>
-                      <TableColumn className="w-32">Status</TableColumn>
-                      <TableColumn className="w-40">Action</TableColumn>
-                    </TableHeader>
-                    <TableBody emptyContent="No branches available.">
-                      {project.branches.map((branch) => (
-                        <TableRow key={`${project.id}-${branch.name}`}>
-                          <TableCell className="font-mono text-xs">
-                            {branch.name}
-                          </TableCell>
-                          <TableCell>
-                            {branch.default ? (
-                              <Chip
-                                color="primary"
-                                radius="sm"
+                      <TableHeader>
+                        <TableColumn>Branch</TableColumn>
+                        <TableColumn className="w-24">Default</TableColumn>
+                        <TableColumn className="w-32">Status</TableColumn>
+                        <TableColumn className="w-40">Action</TableColumn>
+                      </TableHeader>
+                      <TableBody emptyContent="No branches available.">
+                        {project.branches.map((branch) => (
+                          <TableRow key={`${project.id}-${branch.name}`}>
+                            <TableCell className="font-mono text-xs">
+                              {branch.name}
+                            </TableCell>
+                            <TableCell>
+                              {branch.default ? (
+                                <Chip
+                                  color="primary"
+                                  radius="sm"
+                                  size="sm"
+                                  variant="flat"
+                                >
+                                  Default
+                                </Chip>
+                              ) : (
+                                <span className="text-xs text-default-400">
+                                  —
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <BranchStatusChip branch={branch} />
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                color="secondary"
+                                isDisabled={branch.status === "triggering"}
                                 size="sm"
                                 variant="flat"
+                                onPress={() =>
+                                  handleTrigger(project.id, branch.name)
+                                }
                               >
-                                Default
-                              </Chip>
-                            ) : (
-                              <span className="text-xs text-default-400">
-                                —
-                              </span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <BranchStatusChip branch={branch} />
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              color="secondary"
-                              isDisabled={branch.status === "triggering"}
-                              size="sm"
-                              variant="flat"
-                              onPress={() =>
-                                handleTrigger(project.id, branch.name)
-                              }
-                            >
-                              Trigger pipeline
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </AccordionItem>
-            ))}
-          </Accordion>
-        )}
-      </section>
+                                Trigger pipeline
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          )}
+        </CardBody>
+      </Card>
     </div>
   );
 }
