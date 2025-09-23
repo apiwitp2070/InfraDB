@@ -92,7 +92,10 @@ export default function GitlabProjectSearch({
     }
   };
 
-  const handleAddProject = async (project: GitLabProject) => {
+  const handleAddProject = async (
+    project: GitLabProject,
+    alreadyAdded: boolean
+  ) => {
     if (!gitlabToken) {
       setAlertMessage({
         type: "error",
@@ -107,7 +110,11 @@ export default function GitlabProjectSearch({
     try {
       await onProjectAdd(project);
 
-      setSearchResults((prev) => prev.filter((item) => item.id !== project.id));
+      if (!alreadyAdded) {
+        setSearchResults((prev) =>
+          prev.filter((item) => item.id !== project.id)
+        );
+      }
     } catch (error) {
       const text = error instanceof Error ? error.message : String(error);
       setAlertMessage({ type: "error", text });
@@ -130,7 +137,7 @@ export default function GitlabProjectSearch({
           onValueChange={setSearchTerm}
         />
         <Button
-          className="md:w-auto"
+          className="md:w-auto md:min-w-30"
           color="primary"
           isDisabled={!gitlabToken}
           isLoading={isSearching}
@@ -160,14 +167,16 @@ export default function GitlabProjectSearch({
                   </TableCell>
                   <TableCell>
                     <Button
-                      color="secondary"
-                      isDisabled={alreadyAdded || loadingProjectId === projectId}
+                      color={alreadyAdded ? "warning" : "secondary"}
+                      isDisabled={
+                        loadingProjectId === projectId || !gitlabToken
+                      }
                       isLoading={loadingProjectId === projectId}
                       size="sm"
                       variant="flat"
-                      onPress={() => handleAddProject(project)}
+                      onPress={() => handleAddProject(project, alreadyAdded)}
                     >
-                      {alreadyAdded ? "Added" : "Add"}
+                      {alreadyAdded ? "Update" : "Add"}
                     </Button>
                   </TableCell>
                 </TableRow>

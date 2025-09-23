@@ -1,7 +1,7 @@
 "use client";
 
-import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
+import { Divider } from "@heroui/divider";
 import {
   Table,
   TableBody,
@@ -26,20 +26,15 @@ import {
 export default function GitLabProjectsPage() {
   const { tokens } = useTokenStorage();
   const { settings: apiSettings } = useApiSettings();
-  const {
-    projects,
-    upsertProject,
-    removeProject,
-  } = useGitlabProjects();
+  const { projects, upsertProject, removeProject } = useGitlabProjects();
   const alert = useAlertMessage();
 
-  const resolvedBaseUrl =
-    apiSettings.gitlabBaseUrl.trim() || gitLabApiBaseUrl;
+  const resolvedBaseUrl = apiSettings.gitlabBaseUrl.trim() || gitLabApiBaseUrl;
 
   const handleProjectAdd = async (project: GitLabProject) => {
     if (!tokens.gitlab) {
       throw new Error(
-        "GitLab token missing. Save it on the Settings page first.",
+        "GitLab token missing. Save it on the Settings page first."
       );
     }
 
@@ -67,71 +62,74 @@ export default function GitLabProjectsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Card shadow="none">
-        <CardHeader className="flex flex-col items-start gap-1">
-          <h1 className="text-xl font-semibold">GitLab Projects</h1>
-          <p className="text-sm text-default-500">
-            Search your GitLab projects, add them to the workspace, and manage the
-            stored list.
-          </p>
-        </CardHeader>
-        <CardBody className="flex flex-col gap-6">
-          <AlertMessage message={alert.message} />
+      <div className="flex flex-col items-start gap-1">
+        <h1 className="text-xl font-semibold">GitLab Projects</h1>
+        <p className="text-sm text-default-500">
+          Search your GitLab projects, add them to the workspace, and manage the
+          stored list.
+        </p>
+      </div>
 
-          <GitlabProjectSearch
-            baseUrl={apiSettings.gitlabBaseUrl}
-            clearAlertMessage={alert.clearMessage}
-            existingProjectIds={projects.map((project) => project.id)}
-            gitlabToken={tokens.gitlab}
-            setAlertMessage={alert.setMessage}
-            onProjectAdd={handleProjectAdd}
-          />
-        </CardBody>
-      </Card>
+      <AlertMessage message={alert.message} />
 
-      <Card shadow="none">
-        <CardHeader className="flex flex-col items-start gap-1">
-          <h2 className="text-lg font-semibold">Stored projects</h2>
+      <Divider />
+
+      <section className="flex flex-col gap-6">
+        <GitlabProjectSearch
+          baseUrl={apiSettings.gitlabBaseUrl}
+          clearAlertMessage={alert.clearMessage}
+          existingProjectIds={projects.map((project) => project.id)}
+          gitlabToken={tokens.gitlab}
+          setAlertMessage={alert.setMessage}
+          onProjectAdd={handleProjectAdd}
+        />
+      </section>
+
+      <div className="flex flex-col items-start gap-1">
+        <h2 className="text-lg font-semibold">Stored projects</h2>
+        <p className="text-sm text-default-500">
+          Projects saved locally are available to other GitLab workflow pages.
+        </p>
+      </div>
+
+      <section>
+        {projects.length ? (
+          <Table removeWrapper aria-label="Stored GitLab projects">
+            <TableHeader>
+              <TableColumn>Name</TableColumn>
+              <TableColumn>Project ID</TableColumn>
+              <TableColumn className="w-32">Action</TableColumn>
+            </TableHeader>
+            <TableBody>
+              {projects.map((project) => (
+                <TableRow key={project.id}>
+                  <TableCell>{project.name}</TableCell>
+                  <TableCell className="font-mono text-xs">
+                    {project.id}
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      color="danger"
+                      size="sm"
+                      variant="light"
+                      onPress={() =>
+                        handleRemoveProject(project.id, project.name)
+                      }
+                    >
+                      Remove
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        ) : (
           <p className="text-sm text-default-500">
-            Projects saved locally are available to other GitLab workflow pages.
+            No projects stored yet. Use the search above to add your first
+            project.
           </p>
-        </CardHeader>
-        <CardBody>
-          {projects.length ? (
-            <Table removeWrapper aria-label="Stored GitLab projects">
-              <TableHeader>
-                <TableColumn>Name</TableColumn>
-                <TableColumn>Project ID</TableColumn>
-                <TableColumn className="w-32">Action</TableColumn>
-              </TableHeader>
-              <TableBody>
-                {projects.map((project) => (
-                  <TableRow key={project.id}>
-                    <TableCell>{project.name}</TableCell>
-                    <TableCell className="font-mono text-xs">
-                      {project.id}
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        color="danger"
-                        size="sm"
-                        variant="light"
-                        onPress={() => handleRemoveProject(project.id, project.name)}
-                      >
-                        Remove
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <p className="text-sm text-default-500">
-              No projects stored yet. Use the search above to add your first project.
-            </p>
-          )}
-        </CardBody>
-      </Card>
+        )}
+      </section>
     </div>
   );
 }
