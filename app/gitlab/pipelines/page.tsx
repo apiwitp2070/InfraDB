@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { Accordion, AccordionItem } from "@heroui/accordion";
 import { Button } from "@heroui/button";
-import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Chip } from "@heroui/chip";
+import { Divider } from "@heroui/divider";
 import { Input } from "@heroui/input";
 import {
   Table,
@@ -18,6 +18,7 @@ import {
 import AlertMessage from "@/components/alert-message";
 import BranchStatusChip from "@/components/branch-status-chip";
 import { useAlertMessage } from "@/hooks/useAlertMessage";
+import { useApiSettings } from "@/hooks/useApiSettings";
 import { useTokenStorage } from "@/hooks/useTokenStorage";
 import {
   fetchGitLabBranches,
@@ -42,7 +43,7 @@ export default function GitLabPipelinesPage() {
     setMessage: setAlertMessage,
     clearMessage: clearAlertMessage,
   } = useAlertMessage();
-  const [baseUrl, setBaseUrl] = useState(gitLabApiBaseUrl);
+  const { settings: apiSettings } = useApiSettings();
   const [projectIdInput, setProjectIdInput] = useState("");
   const [projects, setProjects] = useState<PipelineProjectState[]>([]);
   const [isHydrated, setIsHydrated] = useState(false);
@@ -118,7 +119,8 @@ export default function GitLabPipelinesPage() {
       );
     }
 
-    const resolvedBaseUrl = baseUrl.trim() || gitLabApiBaseUrl;
+    const resolvedBaseUrl =
+      apiSettings.gitlabBaseUrl.trim() || gitLabApiBaseUrl;
     const projectData =
       existingProject ??
       (await fetchGitLabProject({
@@ -205,7 +207,8 @@ export default function GitLabPipelinesPage() {
       return;
     }
 
-    const resolvedBaseUrl = baseUrl.trim() || gitLabApiBaseUrl;
+    const resolvedBaseUrl =
+      apiSettings.gitlabBaseUrl.trim() || gitLabApiBaseUrl;
 
     setProjects((prev) =>
       prev.map((project) => {
@@ -307,7 +310,8 @@ export default function GitLabPipelinesPage() {
     setIsSearching(true);
     clearAlertMessage();
 
-    const resolvedBaseUrl = baseUrl.trim() || gitLabApiBaseUrl;
+    const resolvedBaseUrl =
+      apiSettings.gitlabBaseUrl.trim() || gitLabApiBaseUrl;
 
     try {
       const results = await searchGitLabProjects({
@@ -358,209 +362,204 @@ export default function GitLabPipelinesPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Card shadow="none">
-        <CardHeader className="flex flex-col items-start gap-1">
-          <h1 className="text-xl font-semibold">GitLab Pipelines</h1>
+      <div className="flex flex-col items-start gap-1">
+        <h1 className="text-xl font-bold">GitLab Pipelines</h1>
+        <p className="text-sm text-default-500">
+          Load projects, browse branches, and trigger pipelines instantly.
+        </p>
+      </div>
+
+      <Divider />
+
+      <AlertMessage message={alertMessage} />
+
+      <section className="flex flex-col gap-6">
+        <div>
+          <h2 className="font-semibold">Add Project</h2>
           <p className="text-sm text-default-500">
-            Load projects, browse branches, and trigger pipelines instantly.
+            You can add project to workspace with following methods
           </p>
-        </CardHeader>
-        <CardBody className="flex flex-col gap-6">
-          <AlertMessage message={alertMessage} />
+        </div>
 
-          <p>Add your project to the list with methods below</p>
+        <div className="flex flex-col gap-3 md:flex-row md:items-end">
+          <Input
+            className="w-full md:w-1/2"
+            label="Add project directly from project ID"
+            labelPlacement="outside"
+            placeholder="123456"
+            value={projectIdInput}
+            onValueChange={setProjectIdInput}
+          />
+          <Button
+            className="md:w-auto"
+            color="primary"
+            isDisabled={
+              !isReady || !projectIdInput.trim().length || !tokens.gitlab
+            }
+            isLoading={isAdding}
+            onPress={handleAddProject}
+          >
+            Add project
+          </Button>
+        </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 md:flex-row md:items-end">
             <Input
-              isRequired
-              label="Enter Project ID"
+              className="w-full md:w-1/2"
+              label="Or search GitLab projects"
               labelPlacement="outside"
-              placeholder="123456"
-              value={projectIdInput}
-              onValueChange={setProjectIdInput}
+              placeholder="Project name"
+              value={searchTerm}
+              onValueChange={setSearchTerm}
             />
-            <Input
-              className="md:col-span-2"
-              label="GitLab API Base URL"
-              labelPlacement="outside"
-              value={baseUrl}
-              onValueChange={setBaseUrl}
-            />
-          </div>
-
-          <div className="flex items-center justify-end">
             <Button
+              className="md:w-auto"
               color="primary"
-              isDisabled={
-                !isReady || !projectIdInput.trim().length || !tokens.gitlab
-              }
-              isLoading={isAdding}
-              onPress={handleAddProject}
+              isDisabled={!isReady || !tokens.gitlab}
+              isLoading={isSearching}
+              onPress={handleSearchProjects}
             >
-              Add project
+              Search
             </Button>
           </div>
 
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-col gap-3 md:flex-row md:items-end">
-              <Input
-                className="md:flex-1"
-                label="Or search GitLab projects"
-                labelPlacement="outside"
-                placeholder="Project name"
-                value={searchTerm}
-                onValueChange={setSearchTerm}
-              />
-              <Button
-                className="md:w-auto"
-                color="primary"
-                isDisabled={!isReady || !tokens.gitlab}
-                isLoading={isSearching}
-                onPress={handleSearchProjects}
-              >
-                Search
-              </Button>
-            </div>
+          {searchResults.length > 0 ? (
+            <Table removeWrapper aria-label="GitLab project search results">
+              <TableHeader>
+                <TableColumn>Project</TableColumn>
+                <TableColumn>Namespace</TableColumn>
+                <TableColumn className="w-32">Action</TableColumn>
+              </TableHeader>
+              <TableBody>
+                {searchResults.map((project) => {
+                  const projectId = String(project.id);
+                  const alreadyAdded = projects.some(
+                    (item) => item.id === projectId
+                  );
 
-            {searchResults.length > 0 ? (
-              <Table removeWrapper aria-label="GitLab project search results">
-                <TableHeader>
-                  <TableColumn>Project</TableColumn>
-                  <TableColumn>Namespace</TableColumn>
-                  <TableColumn className="w-32">Action</TableColumn>
-                </TableHeader>
-                <TableBody>
-                  {searchResults.map((project) => {
-                    const projectId = String(project.id);
-                    const alreadyAdded = projects.some(
-                      (item) => item.id === projectId
-                    );
+                  return (
+                    <TableRow key={projectId}>
+                      <TableCell className="font-medium">
+                        {project.name}
+                      </TableCell>
+                      <TableCell className="text-sm text-default-500">
+                        {project.name_with_namespace}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          color="primary"
+                          isLoading={loadingProjectId === projectId}
+                          size="sm"
+                          variant="flat"
+                          onPress={() => handleSelectProject(project)}
+                        >
+                          {alreadyAdded ? "Update" : "Add"}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          ) : null}
+        </div>
+      </section>
 
-                    return (
-                      <TableRow key={projectId}>
-                        <TableCell className="font-medium">
-                          {project.name}
-                        </TableCell>
-                        <TableCell className="text-sm text-default-500">
-                          {project.name_with_namespace}
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            color="primary"
-                            isLoading={loadingProjectId === projectId}
-                            size="sm"
-                            variant="flat"
-                            onPress={() => handleSelectProject(project)}
-                          >
-                            {alreadyAdded ? "Update" : "Add"}
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            ) : null}
-          </div>
-        </CardBody>
-      </Card>
-
-      <Card shadow="none">
-        <CardHeader className="flex flex-col items-start gap-1">
-          <h2 className="text-lg font-semibold">Projects</h2>
+      <div className="flex flex-col items-start gap-1">
+        <h2 className="text-lg font-semibold">Projects</h2>
+        <p className="text-sm text-default-500">
+          Trigger pipelines directly from the branch list below.
+        </p>
+      </div>
+      <section className="flex flex-col gap-4">
+        {projects.length === 0 ? (
           <p className="text-sm text-default-500">
-            Trigger pipelines directly from the branch list below.
+            Add a project to list available branches and trigger pipelines.
           </p>
-        </CardHeader>
-        <CardBody className="flex flex-col gap-4">
-          {projects.length === 0 ? (
-            <p className="text-sm text-default-500">
-              Add a project to list available branches and trigger pipelines.
-            </p>
-          ) : (
-            <Accordion selectionMode="multiple" variant="bordered">
-              {projects.map((project) => (
-                <AccordionItem
-                  key={project.id}
-                  title={project.name}
-                  subtitle={project.namespace}
-                >
-                  <div className="flex flex-col gap-4">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div className="flex flex-wrap items-center gap-3 text-xs text-default-500">
-                        <span>Project ID: {project.id}</span>
-                        <span>{project.branches.length} branches</span>
-                      </div>
-                      <Button
-                        color="danger"
-                        size="sm"
-                        variant="light"
-                        onPress={() => {
-                          handleRemoveProject(project.id, project.name);
-                        }}
-                      >
-                        Remove project
-                      </Button>
+        ) : (
+          <Accordion selectionMode="multiple" variant="bordered">
+            {projects.map((project) => (
+              <AccordionItem
+                key={project.id}
+                title={project.name}
+                subtitle={project.namespace}
+              >
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-default-500">
+                      <span>Project ID: {project.id}</span>
+                      <span>{project.branches.length} branches</span>
                     </div>
-                    <Table
-                      removeWrapper
-                      aria-label={`Branches for ${project.name}`}
+                    <Button
+                      color="danger"
+                      size="sm"
+                      variant="light"
+                      onPress={() => {
+                        handleRemoveProject(project.id, project.name);
+                      }}
                     >
-                      <TableHeader>
-                        <TableColumn>Branch</TableColumn>
-                        <TableColumn className="w-24">Default</TableColumn>
-                        <TableColumn className="w-32">Status</TableColumn>
-                        <TableColumn className="w-40">Action</TableColumn>
-                      </TableHeader>
-                      <TableBody emptyContent="No branches available.">
-                        {project.branches.map((branch) => (
-                          <TableRow key={`${project.id}-${branch.name}`}>
-                            <TableCell className="font-mono text-xs">
-                              {branch.name}
-                            </TableCell>
-                            <TableCell>
-                              {branch.default ? (
-                                <Chip
-                                  color="primary"
-                                  radius="sm"
-                                  size="sm"
-                                  variant="flat"
-                                >
-                                  Default
-                                </Chip>
-                              ) : (
-                                <span className="text-xs text-default-400">
-                                  —
-                                </span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <BranchStatusChip branch={branch} />
-                            </TableCell>
-                            <TableCell>
-                              <Button
-                                color="secondary"
-                                isDisabled={branch.status === "triggering"}
+                      Remove project
+                    </Button>
+                  </div>
+                  <Table
+                    removeWrapper
+                    aria-label={`Branches for ${project.name}`}
+                  >
+                    <TableHeader>
+                      <TableColumn>Branch</TableColumn>
+                      <TableColumn className="w-24">Default</TableColumn>
+                      <TableColumn className="w-32">Status</TableColumn>
+                      <TableColumn className="w-40">Action</TableColumn>
+                    </TableHeader>
+                    <TableBody emptyContent="No branches available.">
+                      {project.branches.map((branch) => (
+                        <TableRow key={`${project.id}-${branch.name}`}>
+                          <TableCell className="font-mono text-xs">
+                            {branch.name}
+                          </TableCell>
+                          <TableCell>
+                            {branch.default ? (
+                              <Chip
+                                color="primary"
+                                radius="sm"
                                 size="sm"
                                 variant="flat"
-                                onPress={() =>
-                                  handleTrigger(project.id, branch.name)
-                                }
                               >
-                                Trigger pipeline
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          )}
-        </CardBody>
-      </Card>
+                                Default
+                              </Chip>
+                            ) : (
+                              <span className="text-xs text-default-400">
+                                —
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <BranchStatusChip branch={branch} />
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              color="secondary"
+                              isDisabled={branch.status === "triggering"}
+                              size="sm"
+                              variant="flat"
+                              onPress={() =>
+                                handleTrigger(project.id, branch.name)
+                              }
+                            >
+                              Trigger pipeline
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        )}
+      </section>
     </div>
   );
 }

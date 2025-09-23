@@ -2,12 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@heroui/button";
-import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Input } from "@heroui/input";
 import { Switch } from "@heroui/switch";
+import { Divider } from "@heroui/divider";
 
 import AlertMessage from "@/components/alert-message";
 import { useTokenStorage } from "@/hooks/useTokenStorage";
+import { useApiSettings } from "@/hooks/useApiSettings";
 import { gitLabApiBaseUrl, upsertGitLabVariable } from "@/lib/gitlab";
 import { useAlertMessage } from "@/hooks/useAlertMessage";
 import { parseEnvInput } from "@/utils/variable";
@@ -16,12 +17,12 @@ import { VariableStatus } from "@/types/variable";
 
 export default function GitLabVariablesPage() {
   const { tokens, isReady } = useTokenStorage();
+  const { settings: apiSettings } = useApiSettings();
   const alert = useAlertMessage();
 
   const [projectId, setProjectId] = useState("");
   const [envText, setEnvText] = useState("");
   const [skipEmpty, setSkipEmpty] = useState(true);
-  const [baseUrl, setBaseUrl] = useState(gitLabApiBaseUrl);
   const [statuses, setStatuses] = useState<Record<string, VariableStatus>>({});
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -63,7 +64,8 @@ export default function GitLabVariablesPage() {
     setIsSyncing(true);
     alert.clearMessage();
 
-    const resolvedBaseUrl = baseUrl.trim() || gitLabApiBaseUrl;
+    const resolvedBaseUrl =
+      apiSettings.gitlabBaseUrl.trim() || gitLabApiBaseUrl;
 
     let hasErrors = false;
 
@@ -111,65 +113,60 @@ export default function GitLabVariablesPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Card shadow="none">
-        <CardHeader className="flex flex-col items-start gap-1">
-          <h1 className="text-xl font-semibold">GitLab Variables</h1>
-          <p className="text-sm text-default-500">
-            Paste variables in KEY=VALUE format. Comments (#) and blank lines
-            are ignored.
-          </p>
-        </CardHeader>
-        <CardBody className="flex flex-col gap-6">
-          <AlertMessage message={alert.message} />
+      <div className="flex flex-col items-start gap-1">
+        <h1 className="text-xl font-semibold">GitLab Variables</h1>
+        <p className="text-sm text-default-500">
+          Paste variables in KEY=VALUE format. Comments (#) and blank lines are
+          ignored.
+        </p>
+      </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <Input
-              isRequired
-              label="Project ID"
-              labelPlacement="outside"
-              placeholder="123456"
-              value={projectId}
-              onValueChange={setProjectId}
+      <Divider />
+
+      <AlertMessage message={alert.message} />
+
+      <section className="flex flex-col gap-6">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <Input
+            isRequired
+            label="Project ID"
+            labelPlacement="outside"
+            placeholder="123456"
+            value={projectId}
+            onValueChange={setProjectId}
+          />
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <label className="flex flex-col gap-2 text-sm">
+            <span className="font-medium">Environment Variables</span>
+            <textarea
+              className="min-h-[200px] rounded-medium border border-default-200 bg-content1 px-3 py-2 font-mono text-sm outline-none focus-visible:border-primary"
+              placeholder={`API_URL=https://example.com\nAPI_KEY=123456`}
+              value={envText}
+              onChange={(event) => setEnvText(event.target.value)}
             />
-            <Input
-              label="GitLab API Base URL"
-              labelPlacement="outside"
-              value={baseUrl}
-              onValueChange={setBaseUrl}
-            />
-          </div>
+          </label>
+          <Switch isSelected={skipEmpty} onValueChange={setSkipEmpty}>
+            Skip entries with empty values
+          </Switch>
+        </div>
 
-          <div className="flex flex-col gap-3">
-            <label className="flex flex-col gap-2 text-sm">
-              <span className="font-medium">Environment Variables</span>
-              <textarea
-                className="min-h-[200px] rounded-medium border border-default-200 bg-content1 px-3 py-2 font-mono text-sm outline-none focus-visible:border-primary"
-                placeholder={`API_URL=https://example.com\nAPI_KEY=123456`}
-                value={envText}
-                onChange={(event) => setEnvText(event.target.value)}
-              />
-            </label>
-            <Switch isSelected={skipEmpty} onValueChange={setSkipEmpty}>
-              Skip entries with empty values
-            </Switch>
-          </div>
+        {envEntries.length > 0 ? (
+          <VariableTable data={envEntries} statuses={statuses} />
+        ) : null}
 
-          {envEntries.length > 0 ? (
-            <VariableTable data={envEntries} statuses={statuses} />
-          ) : null}
-
-          <div className="flex items-center justify-end gap-3">
-            <Button
-              color="primary"
-              isDisabled={!isReady || !canSync || isSyncing}
-              isLoading={isSyncing}
-              onPress={handleSync}
-            >
-              Sync variables
-            </Button>
-          </div>
-        </CardBody>
-      </Card>
+        <div className="flex items-center justify-end gap-3">
+          <Button
+            color="primary"
+            isDisabled={!isReady || !canSync || isSyncing}
+            isLoading={isSyncing}
+            onPress={handleSync}
+          >
+            Sync variables
+          </Button>
+        </div>
+      </section>
     </div>
   );
 }

@@ -3,16 +3,22 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
-import { Input } from "@heroui/input";
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
+import { Input } from "@heroui/input";
 
+import { useApiSettings } from "@/hooks/useApiSettings";
 import { useTokenStorage } from "@/hooks/useTokenStorage";
+import { gitLabApiBaseUrl } from "@/lib/gitlab";
+import { githubApiBaseUrl } from "@/lib/github";
 
 export default function TokenSettingsPage() {
   const { tokens, setToken, clearTokens, isReady } = useTokenStorage();
+  const { settings: apiSettings, updateSettings } = useApiSettings();
   const [gitlabToken, setGitlabToken] = useState("");
   const [githubToken, setGithubToken] = useState("");
+  const [gitlabBaseUrl, setGitlabBaseUrl] = useState("");
+  const [githubBaseUrl, setGithubBaseUrl] = useState("");
   const [feedback, setFeedback] = useState<string | null>(null);
   const [feedbackType, setFeedbackType] = useState<"saved" | "cleared" | null>(
     null
@@ -25,7 +31,9 @@ export default function TokenSettingsPage() {
 
     setGitlabToken(tokens.gitlab);
     setGithubToken(tokens.github);
-  }, [isReady, tokens.github, tokens.gitlab]);
+    setGitlabBaseUrl(apiSettings.gitlabBaseUrl);
+    setGithubBaseUrl(apiSettings.githubBaseUrl);
+  }, [apiSettings.githubBaseUrl, apiSettings.gitlabBaseUrl, isReady, tokens.github, tokens.gitlab]);
 
   const hasChanges = useMemo(() => {
     if (!isReady) {
@@ -34,9 +42,21 @@ export default function TokenSettingsPage() {
 
     return (
       tokens.gitlab !== gitlabToken.trim() ||
-      tokens.github !== githubToken.trim()
+      tokens.github !== githubToken.trim() ||
+      apiSettings.gitlabBaseUrl !== gitlabBaseUrl.trim() ||
+      apiSettings.githubBaseUrl !== githubBaseUrl.trim()
     );
-  }, [gitlabToken, githubToken, isReady, tokens.github, tokens.gitlab]);
+  }, [
+    apiSettings.githubBaseUrl,
+    apiSettings.gitlabBaseUrl,
+    gitlabBaseUrl,
+    gitlabToken,
+    githubBaseUrl,
+    githubToken,
+    isReady,
+    tokens.github,
+    tokens.gitlab,
+  ]);
 
   useEffect(() => {
     if (!feedback) {
@@ -52,6 +72,10 @@ export default function TokenSettingsPage() {
   const handleSave = () => {
     setToken("gitlab", gitlabToken.trim());
     setToken("github", githubToken.trim());
+    updateSettings({
+      gitlabBaseUrl: gitlabBaseUrl.trim() || gitLabApiBaseUrl,
+      githubBaseUrl: githubBaseUrl.trim() || githubApiBaseUrl,
+    });
     setFeedback("Tokens saved successfully.");
     setFeedbackType("saved");
   };
@@ -81,17 +105,26 @@ export default function TokenSettingsPage() {
               <p className="text-xs text-default-500">
                 Needs api scope to manage variables and pipelines.
               </p>
-            </header>
-            <Input
-              isDisabled={!isReady}
-              label="GitLab Personal Access Token"
-              labelPlacement="outside"
-              placeholder="glpat-..."
-              type="password"
-              value={gitlabToken}
-              onValueChange={setGitlabToken}
-            />
-          </section>
+          </header>
+          <Input
+            isDisabled={!isReady}
+            label="GitLab Personal Access Token"
+            labelPlacement="outside"
+            placeholder="glpat-..."
+            type="password"
+            value={gitlabToken}
+            onValueChange={setGitlabToken}
+          />
+          <Input
+            isDisabled={!isReady}
+            label="GitLab API Base URL"
+            labelPlacement="outside"
+            placeholder="https://gitlab.com/api/v4"
+            type="url"
+            value={gitlabBaseUrl}
+            onValueChange={setGitlabBaseUrl}
+          />
+        </section>
 
           <Divider />
 
@@ -102,16 +135,25 @@ export default function TokenSettingsPage() {
                 Needs repo scope to manage secrets.
               </p>
             </header>
-            <Input
-              isDisabled={!isReady}
-              label="GitHub Personal Access Token"
-              labelPlacement="outside"
-              placeholder="ghp_..."
-              type="password"
-              value={githubToken}
-              onValueChange={setGithubToken}
-            />
-          </section>
+          <Input
+            isDisabled={!isReady}
+            label="GitHub Personal Access Token"
+            labelPlacement="outside"
+            placeholder="ghp_..."
+            type="password"
+            value={githubToken}
+            onValueChange={setGithubToken}
+          />
+          <Input
+            isDisabled={!isReady}
+            label="GitHub API Base URL"
+            labelPlacement="outside"
+            placeholder="https://api.github.com"
+            type="url"
+            value={githubBaseUrl}
+            onValueChange={setGithubBaseUrl}
+          />
+        </section>
 
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">

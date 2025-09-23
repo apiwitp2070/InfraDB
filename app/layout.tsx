@@ -47,7 +47,7 @@ export default function RootLayout({
           <div className="relative flex flex-col md:ml-64 md:pt-22">
             <Sidebar />
 
-            <main className="container mx-auto max-w-7xl pt-4 pb-16 px-4 md:px-6 flex-grow">
+            <main className="container mx-auto max-w-7xl pt-4 pb-16 px-4 md:px-9 flex-grow">
               {children}
             </main>
           </div>

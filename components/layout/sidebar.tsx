@@ -4,6 +4,7 @@ import { Button } from "@heroui/button";
 import { ScrollShadow } from "@heroui/scroll-shadow";
 import NextLink from "next/link";
 import { usePathname } from "next/navigation";
+import clsx from "clsx";
 
 import { siteConfig } from "@/config/site";
 
@@ -42,8 +43,10 @@ export default function Sidebar() {
                       fullWidth
                       key={item.href}
                       as={NextLink}
-                      className="justify-start text-foreground"
-                      color={active ? "primary" : "default"}
+                      className={clsx(
+                        "justify-start text-foreground",
+                        active && item.color
+                      )}
                       data-active={active}
                       href={item.href}
                       radius="sm"

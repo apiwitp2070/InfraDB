@@ -42,10 +42,12 @@ export const siteConfig = {
         {
           label: "Variables",
           href: "/gitlab/variables",
+          color: "bg-orange-200",
         },
         {
           label: "Pipelines",
           href: "/gitlab/pipelines",
+          color: "bg-orange-200",
         },
       ],
     },
@@ -55,6 +57,7 @@ export const siteConfig = {
         {
           label: "Secrets",
           href: "/github/secrets",
+          color: "bg-primary-100",
         },
       ],
     },
