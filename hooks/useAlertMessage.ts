@@ -1,8 +1,10 @@
 import { useCallback, useState } from "react";
 
-import type { StatusMessage } from "@/utils/variable";
+import { StatusMessage } from "@/types/variable";
 
-export const useAlertMessage = (initialMessage: StatusMessage | null = null) => {
+export const useAlertMessage = (
+  initialMessage: StatusMessage | null = null
+) => {
   const [message, setMessage] = useState<StatusMessage | null>(initialMessage);
 
   const setAlert = useCallback((data: StatusMessage | null) => {

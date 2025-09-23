@@ -1,7 +1,7 @@
 import { Alert } from "@heroui/alert";
 import clsx from "clsx";
 
-import type { StatusMessage } from "@/utils/variable";
+import { StatusMessage } from "@/types/variable";
 
 const COLOR_MAP: Record<StatusMessage["type"], "success" | "danger"> = {
   success: "success",
@@ -18,7 +18,10 @@ type AlertMessageProps = {
   className?: string;
 };
 
-export default function AlertMessage({ message, className }: AlertMessageProps) {
+export default function AlertMessage({
+  message,
+  className,
+}: AlertMessageProps) {
   if (!message) {
     return null;
   }

@@ -1,6 +1,7 @@
-import { BranchState } from "@/types/pipeline";
 import { Chip } from "@heroui/chip";
 import { Spinner } from "@heroui/spinner";
+
+import { BranchState } from "@/types/pipeline";
 
 export default function BranchStatusChip({ branch }: { branch: BranchState }) {
   switch (branch.status) {

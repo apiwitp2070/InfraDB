@@ -24,7 +24,6 @@ import {
   gitLabApiBaseUrl,
   triggerGitLabPipeline,
 } from "@/lib/gitlab";
-import branchStatusChip from "@/components/branch-status-chip";
 import {
   PipelineProjectState,
   StoredProject,
@@ -351,8 +350,8 @@ export default function GitLabPipelinesPage() {
                       </Button>
                     </div>
                     <Table
-                      aria-label={`Branches for ${project.name}`}
                       removeWrapper
+                      aria-label={`Branches for ${project.name}`}
                     >
                       <TableHeader>
                         <TableColumn>Branch</TableColumn>
@@ -389,11 +388,11 @@ export default function GitLabPipelinesPage() {
                               <Button
                                 color="secondary"
                                 isDisabled={branch.status === "triggering"}
+                                size="sm"
+                                variant="flat"
                                 onPress={() =>
                                   handleTrigger(project.id, branch.name)
                                 }
-                                size="sm"
-                                variant="flat"
                               >
                                 Trigger pipeline
                               </Button>

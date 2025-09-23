@@ -1,13 +1,11 @@
 "use client";
 
 import { Button } from "@heroui/button";
-import { Divider } from "@heroui/divider";
 import { ScrollShadow } from "@heroui/scroll-shadow";
 import NextLink from "next/link";
 import { usePathname } from "next/navigation";
 
 import { siteConfig } from "@/config/site";
-import { Logo } from "@/components/icons";
 
 const sections = siteConfig.sidebarSections ?? [];
 
@@ -28,7 +26,7 @@ export default function Sidebar() {
 
   return (
     <aside className="hidden md:flex fixed inset-y-0 top-16 left-0 z-40 w-64 h-[calc[100vh-64px]] flex-col border-r border-default-200 bg-content1/60 px-4 py-6 backdrop-blur-md">
-      <ScrollShadow className="flex-1 -mx-2 px-2" hideScrollBar>
+      <ScrollShadow hideScrollBar className="flex-1 -mx-2 px-2">
         <nav aria-label="Main navigation" className="flex flex-col gap-6">
           {sections.map((section) => (
             <div className="flex flex-col gap-2" key={section.label}>
@@ -41,6 +39,7 @@ export default function Sidebar() {
 
                   return (
                     <Button
+                      fullWidth
                       key={item.href}
                       as={NextLink}
                       className="justify-start text-foreground"
@@ -49,7 +48,6 @@ export default function Sidebar() {
                       href={item.href}
                       radius="sm"
                       variant={active ? "flat" : "light"}
-                      fullWidth
                     >
                       {item.label}
                     </Button>

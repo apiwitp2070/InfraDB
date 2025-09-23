@@ -7,7 +7,9 @@ import {
   TableCell,
 } from "@heroui/table";
 import clsx from "clsx";
+
 import StatusChip from "./variable-status-chip";
+
 import { VariableStatus } from "@/types/variable";
 
 interface VariableTableProps {
@@ -28,8 +30,8 @@ export default function VariableTable({ data, statuses }: VariableTableProps) {
         </p>
       </>
       <Table
-        aria-label="GitLab variables preview"
         removeWrapper
+        aria-label="GitLab variables preview"
         className="py-3"
       >
         <TableHeader>

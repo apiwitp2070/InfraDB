@@ -1,6 +1,7 @@
-import { VariableStatus } from "@/types/variable";
 import { Chip } from "@heroui/chip";
 import { Spinner } from "@heroui/spinner";
+
+import { VariableStatus } from "@/types/variable";
 
 export default function VariableStatusChip({
   status,

@@ -1,6 +1,7 @@
-import { siteConfig } from "@/config/site";
 import { Card, CardHeader } from "@heroui/card";
 import Link from "next/link";
+
+import { siteConfig } from "@/config/site";
 
 export default function Home() {
   return (

@@ -10,7 +10,6 @@ import {
   NavbarMenuItem,
 } from "@heroui/navbar";
 import { Button } from "@heroui/button";
-import { link as linkStyles } from "@heroui/theme";
 import NextLink from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
@@ -73,9 +72,9 @@ export const Navbar = () => {
 
       <NavbarContent className="sm:hidden basis-1 pl-4" justify="end">
         <Button
+          isIconOnly
           aria-label="Token settings"
           as={NextLink}
-          isIconOnly
           radius="full"
           variant="light"
           href="/settings"

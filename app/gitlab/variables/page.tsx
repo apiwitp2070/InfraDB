@@ -5,6 +5,7 @@ import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Input } from "@heroui/input";
 import { Switch } from "@heroui/switch";
+
 import AlertMessage from "@/components/alert-message";
 import { useTokenStorage } from "@/hooks/useTokenStorage";
 import { gitLabApiBaseUrl, upsertGitLabVariable } from "@/lib/gitlab";
@@ -143,9 +144,9 @@ export default function GitLabVariablesPage() {
               <span className="font-medium">Environment Variables</span>
               <textarea
                 className="min-h-[200px] rounded-medium border border-default-200 bg-content1 px-3 py-2 font-mono text-sm outline-none focus-visible:border-primary"
-                onChange={(event) => setEnvText(event.target.value)}
                 placeholder={`API_URL=https://example.com\nAPI_KEY=123456`}
                 value={envText}
+                onChange={(event) => setEnvText(event.target.value)}
               />
             </label>
             <Switch isSelected={skipEmpty} onValueChange={setSkipEmpty}>
