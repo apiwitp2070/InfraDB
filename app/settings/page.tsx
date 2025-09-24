@@ -33,7 +33,13 @@ export default function TokenSettingsPage() {
     setGithubToken(tokens.github);
     setGitlabBaseUrl(apiSettings.gitlabBaseUrl);
     setGithubBaseUrl(apiSettings.githubBaseUrl);
-  }, [apiSettings.githubBaseUrl, apiSettings.gitlabBaseUrl, isReady, tokens.github, tokens.gitlab]);
+  }, [
+    apiSettings.githubBaseUrl,
+    apiSettings.gitlabBaseUrl,
+    isReady,
+    tokens.github,
+    tokens.gitlab,
+  ]);
 
   const hasChanges = useMemo(() => {
     if (!isReady) {
@@ -76,7 +82,7 @@ export default function TokenSettingsPage() {
       gitlabBaseUrl: gitlabBaseUrl.trim() || gitLabApiBaseUrl,
       githubBaseUrl: githubBaseUrl.trim() || githubApiBaseUrl,
     });
-    setFeedback("Tokens saved successfully.");
+    setFeedback("Tokens saved");
     setFeedbackType("saved");
   };
 
@@ -84,7 +90,7 @@ export default function TokenSettingsPage() {
     clearTokens();
     setGitlabToken("");
     setGithubToken("");
-    setFeedback("Tokens cleared.");
+    setFeedback("Tokens cleared");
     setFeedbackType("cleared");
   };
 
@@ -100,60 +106,62 @@ export default function TokenSettingsPage() {
         </CardHeader>
         <CardBody className="gap-6">
           <section className="flex flex-col gap-4">
-            <header>
+            <div>
               <h2 className="text-base font-medium">GitLab Token</h2>
               <p className="text-xs text-default-500">
                 Needs api scope to manage variables and pipelines.
               </p>
-          </header>
-          <Input
-            isDisabled={!isReady}
-            label="GitLab Personal Access Token"
-            labelPlacement="outside"
-            placeholder="glpat-..."
-            type="password"
-            value={gitlabToken}
-            onValueChange={setGitlabToken}
-          />
-          <Input
-            isDisabled={!isReady}
-            label="GitLab API Base URL"
-            labelPlacement="outside"
-            placeholder="https://gitlab.com/api/v4"
-            type="url"
-            value={gitlabBaseUrl}
-            onValueChange={setGitlabBaseUrl}
-          />
-        </section>
+            </div>
+            <Input
+              isDisabled={!isReady}
+              label="GitLab Personal Access Token"
+              labelPlacement="outside"
+              placeholder="glpat-..."
+              type="password"
+              autoComplete="new-password"
+              value={gitlabToken}
+              onValueChange={setGitlabToken}
+            />
+            <Input
+              isDisabled={!isReady}
+              label="GitLab API Base URL"
+              labelPlacement="outside"
+              placeholder="https://gitlab.com/api/v4"
+              type="url"
+              value={gitlabBaseUrl}
+              onValueChange={setGitlabBaseUrl}
+            />
+          </section>
 
           <Divider />
 
           <section className="flex flex-col gap-4">
-            <header>
+            <div>
               <h2 className="text-base font-medium">GitHub Token</h2>
               <p className="text-xs text-default-500">
                 Needs repo scope to manage secrets.
               </p>
-            </header>
-          <Input
-            isDisabled={!isReady}
-            label="GitHub Personal Access Token"
-            labelPlacement="outside"
-            placeholder="ghp_..."
-            type="password"
-            value={githubToken}
-            onValueChange={setGithubToken}
-          />
-          <Input
-            isDisabled={!isReady}
-            label="GitHub API Base URL"
-            labelPlacement="outside"
-            placeholder="https://api.github.com"
-            type="url"
-            value={githubBaseUrl}
-            onValueChange={setGithubBaseUrl}
-          />
-        </section>
+            </div>
+            <Input
+              isDisabled={!isReady}
+              label="GitHub Personal Access Token"
+              labelPlacement="outside"
+              placeholder="ghp_..."
+              type="password"
+              autoComplete="new-password"
+              value={githubToken}
+              onValueChange={setGithubToken}
+            />
+            <Input
+              isDisabled={!isReady}
+              label="GitHub API Base URL"
+              labelPlacement="outside"
+              placeholder="https://api.github.com"
+              type="url"
+              value={githubBaseUrl}
+              onValueChange={setGithubBaseUrl}
+            />
+          </section>
 
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">

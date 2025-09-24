@@ -50,17 +50,17 @@ export const siteConfig = {
         {
           label: "Projects",
           href: "/gitlab/project",
-          color: "bg-orange-200",
+          color: "bg-warning-300",
         },
         {
           label: "Variables",
           href: "/gitlab/variables",
-          color: "bg-orange-200",
+          color: "bg-warning-300",
         },
         {
           label: "Pipelines",
           href: "/gitlab/pipelines",
-          color: "bg-orange-200",
+          color: "bg-warning-300",
         },
       ],
     },

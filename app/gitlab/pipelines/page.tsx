@@ -186,6 +186,22 @@ export default function GitLabPipelinesPage() {
     }
   };
 
+  const getPipelineStatusColor = (status: string) => {
+    switch (status) {
+      case "success":
+        return "success" as const;
+      case "failed":
+      case "canceled":
+      case "skipped":
+        return "danger" as const;
+      case "running":
+      case "pending":
+        return "warning" as const;
+      default:
+        return "default" as const;
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col items-start gap-1">
@@ -326,6 +342,58 @@ export default function GitLabPipelinesPage() {
                       ))}
                     </TableBody>
                   </Table>
+
+                  {project.pipelines && project.pipelines.length ? (
+                    <div className="flex flex-col gap-3">
+                      <Divider className="my-2" />
+                      <p className="text-sm font-medium">Recent pipelines</p>
+                      <Table
+                        removeWrapper
+                        aria-label={`Recent pipelines for ${project.name}`}
+                      >
+                        <TableHeader>
+                          <TableColumn className="w-28">Pipeline</TableColumn>
+                          <TableColumn className="w-28">Status</TableColumn>
+                          <TableColumn className="w-32">Ref</TableColumn>
+                          <TableColumn className="w-40">Triggered</TableColumn>
+                        </TableHeader>
+                        <TableBody emptyContent="No recent pipelines.">
+                          {project.pipelines.map((pipeline) => (
+                            <TableRow key={pipeline.id}>
+                              <TableCell>
+                                <a
+                                  className="text-primary underline-offset-2 hover:underline"
+                                  href={pipeline.webUrl}
+                                  rel="noreferrer"
+                                  target="_blank"
+                                >
+                                  #{pipeline.id}
+                                </a>
+                              </TableCell>
+                              <TableCell>
+                                <Chip
+                                  className="capitalize"
+                                  color={getPipelineStatusColor(
+                                    pipeline.status
+                                  )}
+                                  size="sm"
+                                  variant="flat"
+                                >
+                                  {pipeline.status}
+                                </Chip>
+                              </TableCell>
+                              <TableCell className="font-mono text-xs">
+                                {pipeline.ref}
+                              </TableCell>
+                              <TableCell className="text-xs text-default-500">
+                                {new Date(pipeline.createdAt).toLocaleString()}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ) : null}
                 </div>
               </AccordionItem>
             ))}

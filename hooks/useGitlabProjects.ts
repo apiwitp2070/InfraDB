@@ -1,6 +1,10 @@
 "use client";
 
-import type { PipelineProjectState, StoredProject } from "@/types/pipeline";
+import type {
+  PipelineProjectState,
+  PipelineSummary,
+  StoredProject,
+} from "@/types/pipeline";
 
 import { useCallback, useEffect, useState } from "react";
 
@@ -16,6 +20,7 @@ const reviveProjects = (stored: StoredProject[]): PipelineProjectState[] => (
       default: branch.default,
       status: "idle",
     })),
+    pipelines: (project.pipelines ?? []) as PipelineSummary[],
   }))
 );
 
@@ -32,6 +37,7 @@ const persistProjects = (projects: PipelineProjectState[]) => {
       name: branch.name,
       default: branch.default,
     })),
+    pipelines: project.pipelines ?? [],
   }));
 
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(serialized));

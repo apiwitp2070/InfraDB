@@ -1,4 +1,8 @@
-import type { BranchState, PipelineProjectState } from "@/types/pipeline";
+import type {
+  BranchState,
+  PipelineProjectState,
+  PipelineSummary,
+} from "@/types/pipeline";
 
 export type GitLabVariablePayload = {
   key: string;
@@ -14,6 +18,16 @@ export type GitLabProject = {
   id: number;
   name: string;
   name_with_namespace: string;
+};
+
+export type GitLabPipeline = {
+  id: number;
+  status: string;
+  ref: string;
+  sha: string;
+  web_url: string;
+  created_at: string;
+  updated_at: string;
 };
 
 const DEFAULT_GITLAB_API = "https://gitlab.com/api/v4";
@@ -219,11 +233,29 @@ export const loadGitLabProjectWithBranches = async ({
     status: "idle",
   }));
 
+  const pipelines = await fetchGitLabPipelines({
+    projectId,
+    token,
+    baseUrl: resolvedBaseUrl,
+    perPage: 5,
+  });
+
+  const pipelineSummaries: PipelineSummary[] = pipelines.map((pipeline) => ({
+    id: pipeline.id,
+    status: pipeline.status,
+    ref: pipeline.ref,
+    sha: pipeline.sha,
+    webUrl: pipeline.web_url,
+    createdAt: pipeline.created_at,
+    updatedAt: pipeline.updated_at,
+  }));
+
   return {
     id: String(project.id),
     name: project.name,
     namespace: project.name_with_namespace,
     branches: branchStates,
+    pipelines: pipelineSummaries,
   };
 };
 
@@ -236,3 +268,32 @@ export const isGitLabNotFoundError = (error: unknown) => {
 };
 
 export const gitLabApiBaseUrl = DEFAULT_GITLAB_API;
+
+type FetchPipelinesInput = {
+  projectId: string;
+  token: string;
+  baseUrl?: string;
+  perPage?: number;
+};
+
+export const fetchGitLabPipelines = async ({
+  projectId,
+  token,
+  baseUrl,
+  perPage = 5,
+}: FetchPipelinesInput) => {
+  const encodedProjectId = encodeURIComponent(projectId);
+  const params = new URLSearchParams({
+    per_page: String(perPage),
+    order_by: "id",
+    sort: "desc",
+  });
+
+  return request<GitLabPipeline[]>(
+    `/projects/${encodedProjectId}/pipelines?${params.toString()}`,
+    token,
+    {
+      baseUrl,
+    },
+  );
+};

@@ -8,11 +8,22 @@ export interface BranchState {
   error?: string;
 }
 
+export type PipelineSummary = {
+  id: number;
+  status: string;
+  ref: string;
+  sha: string;
+  webUrl: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export interface PipelineProjectState {
   id: string;
   name: string;
   namespace: string;
   branches: BranchState[];
+  pipelines: PipelineSummary[];
 }
 
 export type StoredBranch = {
@@ -25,4 +36,5 @@ export type StoredProject = {
   name: string;
   namespace: string;
   branches: StoredBranch[];
+  pipelines?: PipelineSummary[];
 };
