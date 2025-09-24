@@ -11,9 +11,7 @@ import {
   TableRow,
 } from "@heroui/table";
 
-import AlertMessage from "@/components/alert-message";
 import GitlabProjectSearch from "@/components/gitlab-project-search";
-import { useAlertMessage } from "@/hooks/useAlertMessage";
 import { useApiSettings } from "@/hooks/useApiSettings";
 import { useGitlabProjects } from "@/hooks/useGitlabProjects";
 import { useTokenStorage } from "@/hooks/useTokenStorage";
@@ -22,12 +20,13 @@ import {
   loadGitLabProjectWithBranches,
   type GitLabProject,
 } from "@/lib/gitlab";
+import { useToastMessage } from "@/hooks/useToastMessage";
 
 export default function GitLabProjectsPage() {
   const { tokens } = useTokenStorage();
   const { settings: apiSettings } = useApiSettings();
   const { projects, upsertProject, removeProject } = useGitlabProjects();
-  const alert = useAlertMessage();
+  const toast = useToastMessage();
 
   const resolvedBaseUrl = apiSettings.gitlabBaseUrl.trim() || gitLabApiBaseUrl;
 
@@ -46,7 +45,7 @@ export default function GitLabProjectsPage() {
     });
 
     upsertProject(projectData);
-    alert.setMessage({
+    toast.setMessage({
       type: "success",
       text: `Loaded ${projectData.branches.length} branches for ${projectData.name}.`,
     });
@@ -54,7 +53,7 @@ export default function GitLabProjectsPage() {
 
   const handleRemoveProject = (projectId: string, projectName: string) => {
     removeProject(projectId);
-    alert.setMessage({
+    toast.setMessage({
       type: "success",
       text: `Removed ${projectName || projectId} from the list.`,
     });
@@ -70,17 +69,15 @@ export default function GitLabProjectsPage() {
         </p>
       </div>
 
-      <AlertMessage message={alert.message} />
-
       <Divider />
 
       <section className="flex flex-col gap-6">
         <GitlabProjectSearch
           baseUrl={apiSettings.gitlabBaseUrl}
-          clearAlertMessage={alert.clearMessage}
+          clearAlertMessage={toast.clearMessage}
           existingProjectIds={projects.map((project) => project.id)}
           gitlabToken={tokens.gitlab}
-          setAlertMessage={alert.setMessage}
+          setAlertMessage={toast.setMessage}
           onProjectAdd={handleProjectAdd}
         />
       </section>

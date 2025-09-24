@@ -15,13 +15,12 @@ import {
   TableRow,
 } from "@heroui/table";
 
-import AlertMessage from "@/components/alert-message";
 import BranchStatusChip from "@/components/branch-status-chip";
 import GitlabProjectSearch from "@/components/gitlab-project-search";
-import { useAlertMessage } from "@/hooks/useAlertMessage";
 import { useApiSettings } from "@/hooks/useApiSettings";
 import { useGitlabProjects } from "@/hooks/useGitlabProjects";
 import { useTokenStorage } from "@/hooks/useTokenStorage";
+import { useToastMessage } from "@/hooks/useToastMessage";
 import {
   gitLabApiBaseUrl,
   loadGitLabProjectWithBranches,
@@ -30,13 +29,11 @@ import {
 } from "@/lib/gitlab";
 import StepTitle from "@/components/step-title";
 
+type ChipColor = "default" | "primary" | "secondary" | "success" | "warning" | "danger";
+
 export default function GitLabPipelinesPage() {
   const { tokens, isReady } = useTokenStorage();
-  const {
-    message: alertMessage,
-    setMessage: setAlertMessage,
-    clearMessage: clearAlertMessage,
-  } = useAlertMessage();
+  const toast = useToastMessage();
   const { settings: apiSettings } = useApiSettings();
   const { projects, setProjects, upsertProject, removeProject } =
     useGitlabProjects();
@@ -65,7 +62,7 @@ export default function GitLabPipelinesPage() {
 
     upsertProject(project);
 
-    setAlertMessage({
+    toast.setMessage({
       type: "success",
       text: `Loaded ${project.branches.length} branches for ${project.name}.`,
     });
@@ -75,19 +72,19 @@ export default function GitLabPipelinesPage() {
     const projectId = projectIdInput.trim();
 
     if (!projectId) {
-      setAlertMessage({ type: "error", text: "Project ID is required." });
+      toast.setMessage({ type: "error", text: "Project ID is required." });
       return;
     }
 
     setIsAdding(true);
-    clearAlertMessage();
+    toast.clearMessage();
 
     try {
       await loadProject(projectId);
       setProjectIdInput("");
     } catch (error) {
       const text = error instanceof Error ? error.message : String(error);
-      setAlertMessage({ type: "error", text });
+      toast.setMessage({ type: "error", text });
     } finally {
       setIsAdding(false);
     }
@@ -95,7 +92,7 @@ export default function GitLabPipelinesPage() {
 
   const handleRemoveProject = (projectId: string, projectName: string) => {
     removeProject(projectId);
-    setAlertMessage({
+    toast.setMessage({
       type: "success",
       text: `Removed ${projectName || projectId} from the list.`,
     });
@@ -103,7 +100,7 @@ export default function GitLabPipelinesPage() {
 
   const handleTrigger = async (projectId: string, branchName: string) => {
     if (!tokens.gitlab) {
-      setAlertMessage({
+      toast.setMessage({
         type: "error",
         text: "GitLab token missing. Save it on the Settings page first.",
       });
@@ -158,7 +155,7 @@ export default function GitLabPipelinesPage() {
         })
       );
 
-      setAlertMessage({
+      toast.setMessage({
         type: "success",
         text: `Triggered pipeline for ${branchName}.`,
       });
@@ -182,24 +179,24 @@ export default function GitLabPipelinesPage() {
         })
       );
 
-      setAlertMessage({ type: "error", text });
+      toast.setMessage({ type: "error", text });
     }
   };
 
   const handleCopyProjectId = async (projectId: string) => {
     try {
       await navigator.clipboard.writeText(projectId);
-      setAlertMessage({
+      toast.setMessage({
         type: "success",
         text: `Copied project ID ${projectId}.`,
       });
     } catch (error) {
       const text = error instanceof Error ? error.message : String(error);
-      setAlertMessage({ type: "error", text });
+      toast.setMessage({ type: "error", text });
     }
   };
 
-  const getPipelineStatusColor = (status: string) => {
+  const getPipelineStatusColor = (status: string): ChipColor => {
     switch (status) {
       case "success":
         return "success";
@@ -223,8 +220,6 @@ export default function GitLabPipelinesPage() {
           Load projects, browse branches, and trigger pipelines instantly.
         </p>
       </div>
-
-      <AlertMessage message={alertMessage} />
 
       <Divider />
 
@@ -258,10 +253,10 @@ export default function GitLabPipelinesPage() {
 
         <GitlabProjectSearch
           baseUrl={apiSettings.gitlabBaseUrl}
-          clearAlertMessage={clearAlertMessage}
+          clearAlertMessage={toast.clearMessage}
           existingProjectIds={projects.map((project) => project.id)}
           gitlabToken={tokens.gitlab}
-          setAlertMessage={setAlertMessage}
+          setAlertMessage={toast.setMessage}
           onProjectAdd={async (project) => {
             await loadProject(String(project.id), project);
           }}

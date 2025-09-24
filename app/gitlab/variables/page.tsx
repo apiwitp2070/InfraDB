@@ -14,13 +14,12 @@ import {
 } from "@heroui/table";
 import { Switch } from "@heroui/switch";
 
-import AlertMessage from "@/components/alert-message";
 import GitlabProjectSearch from "@/components/gitlab-project-search";
 import VariableTable from "@/components/variable-table";
-import { useAlertMessage } from "@/hooks/useAlertMessage";
 import { useApiSettings } from "@/hooks/useApiSettings";
 import { useGitlabProjects } from "@/hooks/useGitlabProjects";
 import { useTokenStorage } from "@/hooks/useTokenStorage";
+import { useToastMessage } from "@/hooks/useToastMessage";
 import {
   gitLabApiBaseUrl,
   loadGitLabProjectWithBranches,
@@ -35,7 +34,7 @@ export default function GitLabVariablesPage() {
   const { tokens, isReady } = useTokenStorage();
   const { settings: apiSettings } = useApiSettings();
   const { projects, upsertProject } = useGitlabProjects();
-  const alert = useAlertMessage();
+  const toast = useToastMessage();
 
   const [projectId, setProjectId] = useState("");
   const [envText, setEnvText] = useState("");
@@ -60,12 +59,12 @@ export default function GitLabVariablesPage() {
 
   const handleSync = async () => {
     if (!projectId.trim()) {
-      alert.setMessage({ type: "error", text: "Project ID is required." });
+      toast.setMessage({ type: "error", text: "Project ID is required." });
       return;
     }
 
     if (!tokens.gitlab) {
-      alert.setMessage({
+      toast.setMessage({
         type: "error",
         text: "GitLab token missing. Save it on the Settings page first.",
       });
@@ -73,7 +72,7 @@ export default function GitLabVariablesPage() {
     }
 
     if (envEntries.length === 0) {
-      alert.setMessage({
+      toast.setMessage({
         type: "error",
         text: "Provide at least one environment variable.",
       });
@@ -81,7 +80,7 @@ export default function GitLabVariablesPage() {
     }
 
     setIsSyncing(true);
-    alert.clearMessage();
+    toast.clearMessage();
 
     let hasErrors = false;
 
@@ -105,7 +104,7 @@ export default function GitLabVariablesPage() {
         hasErrors = true;
         const message = error instanceof Error ? error.message : String(error);
         setStatuses((prev) => ({ ...prev, [key]: "error" }));
-        alert.setMessage({
+        toast.setMessage({
           type: "error",
           text: `Failed for ${key}: ${message}`,
         });
@@ -113,7 +112,7 @@ export default function GitLabVariablesPage() {
     }
 
     if (!hasErrors) {
-      alert.setMessage({
+      toast.setMessage({
         type: "success",
         text: "Variables synced successfully.",
       });
@@ -141,7 +140,7 @@ export default function GitLabVariablesPage() {
     });
 
     upsertProject(projectData);
-    alert.setMessage({
+    toast.setMessage({
       type: "success",
       text: `Loaded ${projectData.branches.length} branches for ${projectData.name}.`,
     });
@@ -161,8 +160,6 @@ export default function GitLabVariablesPage() {
         </p>
       </div>
 
-      <AlertMessage message={alert.message} />
-
       <Divider />
 
       <section className="flex flex-col gap-6">
@@ -175,10 +172,10 @@ export default function GitLabVariablesPage() {
         <section className="flex flex-col gap-4">
           <GitlabProjectSearch
             baseUrl={apiSettings.gitlabBaseUrl}
-            clearAlertMessage={alert.clearMessage}
+            clearAlertMessage={toast.clearMessage}
             existingProjectIds={projects.map((project) => project.id)}
             gitlabToken={tokens.gitlab}
-            setAlertMessage={alert.setMessage}
+            setAlertMessage={toast.setMessage}
             onProjectAdd={handleProjectAdd}
           />
 

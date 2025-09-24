@@ -6,15 +6,14 @@ import { Input } from "@heroui/input";
 import { Switch } from "@heroui/switch";
 import { Divider } from "@heroui/divider";
 
-import AlertMessage from "@/components/alert-message";
 import { useTokenStorage } from "@/hooks/useTokenStorage";
 import { useApiSettings } from "@/hooks/useApiSettings";
+import { useToastMessage } from "@/hooks/useToastMessage";
 import {
   githubApiBaseUrl,
   parseRepositoryInput,
   upsertGitHubSecret,
 } from "@/lib/github";
-import { useAlertMessage } from "@/hooks/useAlertMessage";
 import { parseEnvInput } from "@/utils/variable";
 import VariableTable from "@/components/variable-table";
 import { VariableStatus } from "@/types/variable";
@@ -22,7 +21,7 @@ import { VariableStatus } from "@/types/variable";
 export default function GitHubSecretsPage() {
   const { tokens, isReady } = useTokenStorage();
   const { settings: apiSettings } = useApiSettings();
-  const alert = useAlertMessage();
+  const toast = useToastMessage();
 
   const [repositoryInput, setRepositoryInput] = useState("");
   const [envText, setEnvText] = useState("");
@@ -47,7 +46,7 @@ export default function GitHubSecretsPage() {
     const repoRef = parseRepositoryInput(repositoryInput.trim());
 
     if (!repoRef) {
-      alert.setMessage({
+      toast.setMessage({
         type: "error",
         text: "Repository must be in the format owner/repo.",
       });
@@ -55,7 +54,7 @@ export default function GitHubSecretsPage() {
     }
 
     if (!tokens.github) {
-      alert.setMessage({
+      toast.setMessage({
         type: "error",
         text: "GitHub token missing. Save it on the Tokens page first.",
       });
@@ -63,7 +62,7 @@ export default function GitHubSecretsPage() {
     }
 
     if (envEntries.length === 0) {
-      alert.setMessage({
+      toast.setMessage({
         type: "error",
         text: "Provide at least one secret in KEY=VALUE format.",
       });
@@ -71,7 +70,7 @@ export default function GitHubSecretsPage() {
     }
 
     setIsSyncing(true);
-    alert.clearMessage();
+    toast.clearMessage();
 
     const resolvedBaseUrl =
       apiSettings.githubBaseUrl.trim() || githubApiBaseUrl;
@@ -101,7 +100,7 @@ export default function GitHubSecretsPage() {
         hasErrors = true;
         const message = error instanceof Error ? error.message : String(error);
         setStatuses((prev) => ({ ...prev, [key]: "error" }));
-        alert.setMessage({
+        toast.setMessage({
           type: "error",
           text: `Failed for ${key}: ${message}`,
         });
@@ -109,7 +108,7 @@ export default function GitHubSecretsPage() {
     }
 
     if (!hasErrors) {
-      alert.setMessage({
+      toast.setMessage({
         type: "success",
         text: "Secrets synced successfully.",
       });
@@ -134,8 +133,6 @@ export default function GitHubSecretsPage() {
       </div>
 
       <Divider />
-
-      <AlertMessage message={alert.message} />
 
       <section className="flex flex-col gap-6">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
