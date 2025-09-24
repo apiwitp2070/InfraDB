@@ -161,7 +161,16 @@ export default function GitlabProjectSearch({
 
               return (
                 <TableRow key={projectId}>
-                  <TableCell className="font-medium">{project.name}</TableCell>
+                  <TableCell className="font-medium">
+                    <a
+                      className="text-primary underline-offset-2 hover:underline"
+                      href={project.web_url}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      {project.name}
+                    </a>
+                  </TableCell>
                   <TableCell className="text-sm text-default-500">
                     {project.name_with_namespace}
                   </TableCell>

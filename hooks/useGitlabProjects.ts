@@ -15,6 +15,7 @@ const reviveProjects = (stored: StoredProject[]): PipelineProjectState[] => (
     id: String(project.id),
     name: project.name,
     namespace: project.namespace,
+    webUrl: project.webUrl ?? "",
     branches: project.branches.map((branch) => ({
       name: branch.name,
       default: branch.default,
@@ -33,6 +34,7 @@ const persistProjects = (projects: PipelineProjectState[]) => {
     id: project.id,
     name: project.name,
     namespace: project.namespace,
+    webUrl: project.webUrl,
     branches: project.branches.map((branch) => ({
       name: branch.name,
       default: branch.default,

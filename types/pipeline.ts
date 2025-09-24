@@ -22,6 +22,7 @@ export interface PipelineProjectState {
   id: string;
   name: string;
   namespace: string;
+  webUrl: string;
   branches: BranchState[];
   pipelines: PipelineSummary[];
 }
@@ -35,6 +36,7 @@ export type StoredProject = {
   id: string;
   name: string;
   namespace: string;
+  webUrl: string;
   branches: StoredBranch[];
   pipelines?: PipelineSummary[];
 };

@@ -18,6 +18,7 @@ export type GitLabProject = {
   id: number;
   name: string;
   name_with_namespace: string;
+  web_url: string;
 };
 
 export type GitLabPipeline = {
@@ -254,6 +255,7 @@ export const loadGitLabProjectWithBranches = async ({
     id: String(project.id),
     name: project.name,
     namespace: project.name_with_namespace,
+    webUrl: project.web_url,
     branches: branchStates,
     pipelines: pipelineSummaries,
   };

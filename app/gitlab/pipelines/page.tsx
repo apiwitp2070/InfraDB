@@ -186,19 +186,32 @@ export default function GitLabPipelinesPage() {
     }
   };
 
+  const handleCopyProjectId = async (projectId: string) => {
+    try {
+      await navigator.clipboard.writeText(projectId);
+      setAlertMessage({
+        type: "success",
+        text: `Copied project ID ${projectId}.`,
+      });
+    } catch (error) {
+      const text = error instanceof Error ? error.message : String(error);
+      setAlertMessage({ type: "error", text });
+    }
+  };
+
   const getPipelineStatusColor = (status: string) => {
     switch (status) {
       case "success":
-        return "success" as const;
+        return "success";
       case "failed":
       case "canceled":
       case "skipped":
-        return "danger" as const;
+        return "danger";
       case "running":
       case "pending":
-        return "warning" as const;
+        return "warning";
       default:
-        return "default" as const;
+        return "default";
     }
   };
 
@@ -271,13 +284,29 @@ export default function GitLabPipelinesPage() {
               <AccordionItem
                 key={project.id}
                 subtitle={project.namespace}
-                title={project.name}
+                title={
+                  <a
+                    className="text-primary underline-offset-2 hover:underline"
+                    href={project.webUrl}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    {project.name}
+                  </a>
+                }
               >
                 <div className="flex flex-col gap-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex flex-wrap items-center gap-3 text-xs text-default-500">
                       <span>Project ID: {project.id}</span>
                       <span>{project.branches.length} branches</span>
+                      <Button
+                        size="sm"
+                        variant="light"
+                        onPress={() => handleCopyProjectId(project.id)}
+                      >
+                        Copy project ID
+                      </Button>
                     </div>
                     <Button
                       color="danger"
