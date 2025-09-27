@@ -1,53 +1,45 @@
-# Next.js & HeroUI Template
+# Git Utils
 
-This is a template for creating applications using Next.js 14 (app directory) and HeroUI (v2).
+Git Utils is a Next.js + HeroUI web app that helps you manage common GitLab and GitHub REST API workflows from a single dashboard.
 
-[Try it on CodeSandbox](https://githubbox.com/heroui-inc/heroui/next-app-template)
+> ⚠️ This project currently use localStorage for all features. Treat this project as a private/personal tool and avoid using it on shared or untrusted machines.
 
-## Technologies Used
+## Features
 
-- [Next.js 14](https://nextjs.org/docs/getting-started)
-- [HeroUI v2](https://heroui.com/)
-- [Tailwind CSS](https://tailwindcss.com/)
-- [Tailwind Variants](https://tailwind-variants.org)
-- [TypeScript](https://www.typescriptlang.org/)
-- [Framer Motion](https://www.framer.com/motion/)
-- [next-themes](https://github.com/pacocoursey/next-themes)
+### Gitlab
 
-## How to Use
+- Search GitLab projects and store them locally for easy access and uses with other features.
+- Create and update multiple GitLab project variables with a few click. Come with status tracking, skipping empty values.
+- Trigger GitLab pipelines per branch, view most recent pipeline executions.
 
-### Use the template with create-next-app
+### Github
 
-To create a new project based on this template using `create-next-app`, run the following command:
+- Create and update GitHub repository secrets. With status tracking, skipping empty values option.
 
+## Getting Started
+
+### Prerequisites
+
+- Node.js 20 or later (Older version is not tested but might work).
+- A GitLab personal access token and a GitHub PAT with access to the repositories.
+
+### Running Development Server
+
+1. Clone the repository.
+2. Install dependencies:
 ```bash
-npx create-next-app -e https://github.com/heroui-inc/next-app-template
+bun install
 ```
-
-### Install dependencies
-
-You can use one of them `npm`, `yarn`, `pnpm`, `bun`, Example using `npm`:
-
+3. Start the development server:
 ```bash
-npm install
+bun dev
 ```
+4. Website is running at `http://localhost:3000` by default.
 
-### Run the development server
+## Usage
 
-```bash
-npm run dev
-```
-
-### Setup pnpm (optional)
-
-If you are using `pnpm`, you need to add the following code to your `.npmrc` file:
-
-```bash
-public-hoist-pattern[]=*@heroui/*
-```
-
-After modifying the `.npmrc` file, you need to run `pnpm install` again to ensure that the dependencies are installed correctly.
-
-## License
-
-Licensed under the [MIT license](https://github.com/heroui-inc/next-app-template/blob/main/LICENSE).
+- Visit the Settings page (top-right navbar icon) to enter your GitLab and GitHub tokens.
+- Use the GitLab Projects page to search and persist projects, refresh their metadata, and copy project IDs.
+- Manage environment variables for a project on the GitLab Variables page; select a saved project or paste an ID manually.
+- Trigger branches' pipelines and see recent pipelines execution on the GitLab Pipelines page.
+- Manage GitHub repository secrets via the GitHub Secrets page.
