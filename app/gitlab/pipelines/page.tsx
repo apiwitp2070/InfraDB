@@ -29,7 +29,13 @@ import {
 } from "@/lib/gitlab";
 import StepTitle from "@/components/step-title";
 
-type ChipColor = "default" | "primary" | "secondary" | "success" | "warning" | "danger";
+type ChipColor =
+  | "default"
+  | "primary"
+  | "secondary"
+  | "success"
+  | "warning"
+  | "danger";
 
 export default function GitLabPipelinesPage() {
   const { tokens, isReady } = useTokenStorage();

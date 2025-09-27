@@ -187,21 +187,21 @@ export default function GitLabVariablesPage() {
                 <TableColumn className="w-32">Action</TableColumn>
               </TableHeader>
               <TableBody>
-                  {projects.map((project) => (
-                    <TableRow key={project.id}>
-                      <TableCell>
-                        <a
-                          className="text-primary underline-offset-2 hover:underline"
-                          href={project.webUrl}
-                          rel="noreferrer"
-                          target="_blank"
-                        >
-                          {project.name}
-                        </a>
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">
-                        {project.id}
-                      </TableCell>
+                {projects.map((project) => (
+                  <TableRow key={project.id}>
+                    <TableCell>
+                      <a
+                        className="text-primary underline-offset-2 hover:underline"
+                        href={project.webUrl}
+                        rel="noreferrer"
+                        target="_blank"
+                      >
+                        {project.name}
+                      </a>
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {project.id}
+                    </TableCell>
                     <TableCell>
                       <Button
                         size="sm"
@@ -227,6 +227,7 @@ export default function GitLabVariablesPage() {
             labelPlacement="outside"
             placeholder="123456"
             value={projectId}
+            className="md:w-1/2"
             onValueChange={setProjectId}
           />
         </section>
