@@ -8,7 +8,7 @@ import type {
 
 import { useCallback, useEffect, useState } from "react";
 
-const STORAGE_KEY = "gitlab_pipeline_projects";
+import { db } from "@/lib/db";
 
 const reviveProjects = (stored: StoredProject[]): PipelineProjectState[] => (
   stored.map((project) => ({
@@ -25,7 +25,7 @@ const reviveProjects = (stored: StoredProject[]): PipelineProjectState[] => (
   }))
 );
 
-const persistProjects = (projects: PipelineProjectState[]) => {
+const persistProjects = async (projects: PipelineProjectState[]) => {
   if (typeof window === "undefined") {
     return;
   }
@@ -42,7 +42,28 @@ const persistProjects = (projects: PipelineProjectState[]) => {
     pipelines: project.pipelines ?? [],
   }));
 
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(serialized));
+  try {
+    await db.transaction("rw", db.projects, async () => {
+      if (!serialized.length) {
+        await db.projects.clear();
+        return;
+      }
+
+      const existingIds = await db.projects.toCollection().primaryKeys();
+      const nextIds = new Set(serialized.map((project) => project.id));
+      const deletions = existingIds
+        .map((id) => String(id))
+        .filter((id) => !nextIds.has(id));
+
+      if (deletions.length) {
+        await db.projects.bulkDelete(deletions);
+      }
+
+      await db.projects.bulkPut(serialized);
+    });
+  } catch (error) {
+    console.error("Failed to persist GitLab projects", error);
+  }
 };
 
 export const useGitlabProjects = () => {
@@ -50,25 +71,36 @@ export const useGitlabProjects = () => {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
+    let isMounted = true;
 
-    try {
-      const storedRaw = window.localStorage.getItem(STORAGE_KEY);
+    const loadProjects = async () => {
+      try {
+        if (typeof window === "undefined") {
+          setIsReady(true);
+          return;
+        }
 
-      if (!storedRaw) {
-        setIsReady(true);
-        return;
+        const storedProjects = await db.projects.toArray();
+
+        if (!isMounted) {
+          return;
+        }
+
+        setProjects(reviveProjects(storedProjects));
+      } catch (error) {
+        console.error("Failed to load GitLab projects from storage", error);
+      } finally {
+        if (isMounted) {
+          setIsReady(true);
+        }
       }
+    };
 
-      const parsed = JSON.parse(storedRaw) as StoredProject[];
-      setProjects(reviveProjects(parsed));
-    } catch (error) {
-      console.error("Failed to load GitLab projects from storage", error);
-    } finally {
-      setIsReady(true);
-    }
+    void loadProjects();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -76,7 +108,7 @@ export const useGitlabProjects = () => {
       return;
     }
 
-    persistProjects(projects);
+    void persistProjects(projects);
   }, [isReady, projects]);
 
   const upsertProject = useCallback((project: PipelineProjectState) => {

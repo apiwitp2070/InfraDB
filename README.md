@@ -2,7 +2,7 @@
 
 Git Utils is a Next.js + HeroUI web app that helps you manage common GitLab and GitHub REST API workflows from a single dashboard.
 
-> ⚠️ This project currently use localStorage for all features. Treat this project as a private/personal tool and avoid using it on shared or untrusted machines.
+> ⚠️ This project stores data in the browser's IndexedDB. Treat this project as a private/personal tool and avoid using it on shared or untrusted machines.
 
 ## Features
 
@@ -27,13 +27,17 @@ Git Utils is a Next.js + HeroUI web app that helps you manage common GitLab and 
 
 1. Clone the repository.
 2. Install dependencies:
+
 ```bash
 bun install
 ```
+
 3. Start the development server:
+
 ```bash
 bun dev
 ```
+
 4. Website is running at `http://localhost:3000` by default.
 
 ## Usage

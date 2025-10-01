@@ -1,56 +1,107 @@
 "use client";
 
+import type { TokenKind } from "@/types/token";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-export type TokenKind = "github" | "gitlab";
+import { db } from "@/lib/db";
 
 const STORAGE_KEYS: Record<TokenKind, string> = {
-  github: "github_token",
-  gitlab: "gitlab_token",
+  github: "github",
+  gitlab: "gitlab",
+};
+
+const DEFAULT_TOKENS: Record<TokenKind, string> = {
+  github: "",
+  gitlab: "",
 };
 
 export const useTokenStorage = () => {
   const [tokens, setTokens] = useState<Record<TokenKind, string>>({
-    github: "",
-    gitlab: "",
+    ...DEFAULT_TOKENS,
   });
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
+    let isMounted = true;
 
-    setTokens({
-      github: localStorage.getItem(STORAGE_KEYS.github) ?? "",
-      gitlab: localStorage.getItem(STORAGE_KEYS.gitlab) ?? "",
-    });
-    setIsReady(true);
+    const loadTokens = async () => {
+      try {
+        if (typeof window === "undefined") {
+          setIsReady(true);
+          return;
+        }
+
+        const [githubRecord, gitlabRecord] = await Promise.all([
+          db.tokens.get(STORAGE_KEYS.github),
+          db.tokens.get(STORAGE_KEYS.gitlab),
+        ]);
+
+        if (!isMounted) {
+          return;
+        }
+
+        setTokens({
+          github: githubRecord?.value ?? "",
+          gitlab: gitlabRecord?.value ?? "",
+        });
+      } catch (error) {
+        console.error("Failed to load tokens from IndexedDB", error);
+      } finally {
+        if (isMounted) {
+          setIsReady(true);
+        }
+      }
+    };
+
+    void loadTokens();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const setToken = useCallback((kind: TokenKind, value: string) => {
     setTokens((prev) => ({ ...prev, [kind]: value }));
 
-    if (typeof window === "undefined") {
-      return;
-    }
+    const persist = async () => {
+      if (typeof window === "undefined") {
+        return;
+      }
 
-    if (value) {
-      localStorage.setItem(STORAGE_KEYS[kind], value);
-    } else {
-      localStorage.removeItem(STORAGE_KEYS[kind]);
-    }
+      try {
+        if (value) {
+          await db.tokens.put({ key: STORAGE_KEYS[kind], value });
+        } else {
+          await db.tokens.delete(STORAGE_KEYS[kind]);
+        }
+      } catch (error) {
+        console.error("Failed to persist token", error);
+      }
+    };
+
+    void persist();
   }, []);
 
   const clearTokens = useCallback(() => {
-    setTokens({ github: "", gitlab: "" });
+    setTokens({ ...DEFAULT_TOKENS });
 
-    if (typeof window === "undefined") {
-      return;
-    }
+    const clear = async () => {
+      if (typeof window === "undefined") {
+        return;
+      }
 
-    localStorage.removeItem(STORAGE_KEYS.github);
-    localStorage.removeItem(STORAGE_KEYS.gitlab);
+      try {
+        await db.tokens.bulkDelete([
+          STORAGE_KEYS.github,
+          STORAGE_KEYS.gitlab,
+        ]);
+      } catch (error) {
+        console.error("Failed to clear tokens", error);
+      }
+    };
+
+    void clear();
   }, []);
 
   const hasTokens = useMemo(
@@ -61,10 +112,16 @@ export const useTokenStorage = () => {
   return { tokens, setToken, clearTokens, isReady, hasTokens };
 };
 
-export const getTokenFromStorage = (kind: TokenKind) => {
+export const getTokenFromStorage = async (kind: TokenKind) => {
   if (typeof window === "undefined") {
     return "";
   }
 
-  return localStorage.getItem(STORAGE_KEYS[kind]) ?? "";
+  try {
+    const record = await db.tokens.get(STORAGE_KEYS[kind]);
+    return record?.value ?? "";
+  } catch (error) {
+    console.error("Failed to read token from IndexedDB", error);
+    return "";
+  }
 };

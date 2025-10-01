@@ -2,10 +2,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { db } from "@/lib/db";
 import { gitLabApiBaseUrl } from "@/lib/gitlab";
 import { githubApiBaseUrl } from "@/lib/github";
 
-const STORAGE_KEY = "api_settings";
+const SETTINGS_KEYS = {
+  gitlab: "gitlab_base_url",
+  github: "github_base_url",
+} as const;
 
 export type ApiSettings = {
   gitlabBaseUrl: string;
@@ -22,41 +26,81 @@ export const useApiSettings = () => {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
+    let isMounted = true;
 
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
+    const loadSettings = async () => {
+      try {
+        if (typeof window === "undefined") {
+          setIsReady(true);
+          return;
+        }
 
-      if (!raw) {
-        return;
+        const [gitlabRecord, githubRecord] = await Promise.all([
+          db.settings.get(SETTINGS_KEYS.gitlab),
+          db.settings.get(SETTINGS_KEYS.github),
+        ]);
+
+        if (!isMounted) {
+          return;
+        }
+
+        setSettings((prev) => ({
+          gitlabBaseUrl: gitlabRecord?.value ?? prev.gitlabBaseUrl,
+          githubBaseUrl: githubRecord?.value ?? prev.githubBaseUrl,
+        }));
+      } catch (error) {
+        console.error("Failed to load API settings", error);
+      } finally {
+        if (isMounted) {
+          setIsReady(true);
+        }
       }
+    };
 
-      const parsed = JSON.parse(raw) as Partial<ApiSettings> | null;
+    void loadSettings();
 
-      if (!parsed) {
-        return;
-      }
-
-      setSettings((prev) => ({
-        gitlabBaseUrl: parsed.gitlabBaseUrl ?? prev.gitlabBaseUrl,
-        githubBaseUrl: parsed.githubBaseUrl ?? prev.githubBaseUrl,
-      }));
-    } catch (error) {
-      console.error("Failed to load API settings", error);
-    } finally {
-      setIsReady(true);
-    }
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const updateSettings = useCallback((partial: Partial<ApiSettings>) => {
     setSettings((prev) => {
       const next = { ...prev, ...partial };
 
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-      }
+      const persist = async () => {
+        if (typeof window === "undefined") {
+          return;
+        }
+
+        const tasks: Promise<unknown>[] = [];
+
+        if (partial.gitlabBaseUrl !== undefined) {
+          tasks.push(
+            db.settings.put({
+              key: SETTINGS_KEYS.gitlab,
+              value: next.gitlabBaseUrl,
+            })
+          );
+        }
+
+        if (partial.githubBaseUrl !== undefined) {
+          tasks.push(
+            db.settings.put({
+              key: SETTINGS_KEYS.github,
+              value: next.githubBaseUrl,
+            })
+          );
+        }
+
+        try {
+          await Promise.all(tasks);
+        } catch (error) {
+          console.error("Failed to persist API settings", error);
+        }
+      };
+
+      void persist();
 
       return next;
     });
@@ -65,9 +109,22 @@ export const useApiSettings = () => {
   const resetSettings = useCallback(() => {
     setSettings(DEFAULT_SETTINGS);
 
-    if (typeof window !== "undefined") {
-      window.localStorage.removeItem(STORAGE_KEY);
-    }
+    const reset = async () => {
+      if (typeof window === "undefined") {
+        return;
+      }
+
+      try {
+        await db.settings.bulkDelete([
+          SETTINGS_KEYS.gitlab,
+          SETTINGS_KEYS.github,
+        ]);
+      } catch (error) {
+        console.error("Failed to reset API settings", error);
+      }
+    };
+
+    void reset();
   }, []);
 
   return {

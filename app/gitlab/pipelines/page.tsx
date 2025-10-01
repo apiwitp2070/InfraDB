@@ -285,6 +285,7 @@ export default function GitLabPipelinesPage() {
               <AccordionItem
                 key={project.id}
                 subtitle={project.namespace}
+                textValue={project.name}
                 title={
                   <a
                     className="text-primary underline-offset-2 hover:underline"
