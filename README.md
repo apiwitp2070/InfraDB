@@ -1,6 +1,6 @@
 # InfraDB
 
-InfraDB (read as Infra dashboard) let you shorten some of your repetitive workflow with some help of official REST Api.
+InfraDB (read as Infra dashboard) let you shorten some of your repetitive workflow with some help from various services REST Api.
 
 > ⚠️ This project stores data in the browser's IndexedDB. Treat this project as a private/personal tool and avoid using it on shared or untrusted machines.
 
