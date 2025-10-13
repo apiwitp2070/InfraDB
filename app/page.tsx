@@ -18,7 +18,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col items-center justify-center gap-6">
-      <p className="font-bold text-3xl text-title">Git Utils</p>
+      <p className="font-bold text-3xl text-title">InfraDB</p>
 
       {showMissingGitlabTokens && <TokenAlertBox module="GitLab" />}
 
