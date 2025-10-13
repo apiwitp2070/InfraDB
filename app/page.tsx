@@ -11,8 +11,10 @@ export default function Home() {
   const { tokens, isReady } = useTokenStorage();
   const hasGitlabToken = Boolean(tokens.gitlab);
   const hasGithubToken = Boolean(tokens.github);
+  const hasCloudflareToken = Boolean(tokens.cloudflare);
   const showMissingGitlabTokens = isReady && !hasGitlabToken;
   const showMissingGithubTokens = isReady && !hasGithubToken;
+  const showMissingCloudflareToken = isReady && !hasCloudflareToken;
 
   return (
     <div className="flex flex-col items-center justify-center gap-6">
@@ -21,6 +23,8 @@ export default function Home() {
       {showMissingGitlabTokens && <TokenAlertBox module="GitLab" />}
 
       {showMissingGithubTokens && <TokenAlertBox module="GitHub" />}
+
+      {showMissingCloudflareToken && <TokenAlertBox module="Cloudflare" />}
 
       <p className="text-default-500">Quick Access</p>
 

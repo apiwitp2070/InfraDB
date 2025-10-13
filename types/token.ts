@@ -1,1 +1,1 @@
-export type TokenKind = "github" | "gitlab";
+export type TokenKind = "github" | "gitlab" | "cloudflare";

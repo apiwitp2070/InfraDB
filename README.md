@@ -1,6 +1,6 @@
-# Git Utils
+# InfraDB
 
-Git Utils is a Next.js + HeroUI web app that helps you manage common GitLab and GitHub REST API workflows from a single dashboard.
+InfraDB (read as Infra dashboard) let you shorten some of your repetitive workflow with some help of official REST Api.
 
 > ⚠️ This project stores data in the browser's IndexedDB. Treat this project as a private/personal tool and avoid using it on shared or untrusted machines.
 
@@ -16,12 +16,16 @@ Git Utils is a Next.js + HeroUI web app that helps you manage common GitLab and 
 
 - Create and update GitHub repository secrets. With status tracking, skipping empty values option.
 
+### Cloudflare
+
+- Create Cloudflare R2 buckets from a single dashboard and automatically enable the dev domain.
+
 ## Getting Started
 
 ### Prerequisites
 
 - Node.js 20 or later (Older version is not tested but might work).
-- A GitLab personal access token and a GitHub PAT with access to the repositories.
+- A personal access token for service you want to use with required permission scope.
 
 ### Running Development Server
 
@@ -42,8 +46,9 @@ bun dev
 
 ## Usage
 
-- Visit the Settings page (top-right navbar icon) to enter your GitLab and GitHub tokens.
+- Visit the Settings page (top-right navbar icon) to setup your tokens.
 - Use the GitLab Projects page to search and persist projects, refresh their metadata, and copy project IDs.
 - Manage environment variables for a project on the GitLab Variables page; select a saved project or paste an ID manually.
 - Trigger branches' pipelines and see recent pipelines execution on the GitLab Pipelines page.
 - Manage GitHub repository secrets via the GitHub Secrets page.
+- Use the Cloudflare R2 page to create new bucket and grab the dev domain in a single click.

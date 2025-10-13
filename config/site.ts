@@ -1,8 +1,8 @@
 export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
-  name: "Git Utils",
-  description: "Helper tools for GitLab and GitHub REST APIs.",
+  name: "InfraDB",
+  description: "Helper tools for GitLab, GitHub, and Cloudflare REST APIs.",
   navItems: [
     {
       label: "GitLab Projects",
@@ -19,6 +19,10 @@ export const siteConfig = {
     {
       label: "GitHub Secrets",
       href: "/github/secrets",
+    },
+    {
+      label: "Cloudflare R2",
+      href: "/cloudflare/r2",
     },
   ],
   navMenuItems: [
@@ -37,6 +41,10 @@ export const siteConfig = {
     {
       label: "GitHub Secrets",
       href: "/github/secrets",
+    },
+    {
+      label: "Cloudflare R2",
+      href: "/cloudflare/r2",
     },
     {
       label: "Settings",
@@ -71,6 +79,16 @@ export const siteConfig = {
           label: "Secrets",
           href: "/github/secrets",
           color: "bg-primary-100",
+        },
+      ],
+    },
+    {
+      label: "Cloudflare",
+      items: [
+        {
+          label: "R2 Buckets",
+          href: "/cloudflare/r2",
+          color: "bg-secondary-200",
         },
       ],
     },

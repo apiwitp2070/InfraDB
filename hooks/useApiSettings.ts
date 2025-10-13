@@ -9,16 +9,19 @@ import { githubApiBaseUrl } from "@/lib/github";
 const SETTINGS_KEYS = {
   gitlab: "gitlab_base_url",
   github: "github_base_url",
+  cloudflareAccount: "cloudflare_account_id",
 } as const;
 
 export type ApiSettings = {
   gitlabBaseUrl: string;
   githubBaseUrl: string;
+  cloudflareAccountId: string;
 };
 
 const DEFAULT_SETTINGS: ApiSettings = {
   gitlabBaseUrl: gitLabApiBaseUrl,
   githubBaseUrl: githubApiBaseUrl,
+  cloudflareAccountId: "",
 };
 
 export const useApiSettings = () => {
@@ -35,10 +38,12 @@ export const useApiSettings = () => {
           return;
         }
 
-        const [gitlabRecord, githubRecord] = await Promise.all([
-          db.settings.get(SETTINGS_KEYS.gitlab),
-          db.settings.get(SETTINGS_KEYS.github),
-        ]);
+        const [gitlabRecord, githubRecord, cloudflareAccount] =
+          await Promise.all([
+            db.settings.get(SETTINGS_KEYS.gitlab),
+            db.settings.get(SETTINGS_KEYS.github),
+            db.settings.get(SETTINGS_KEYS.cloudflareAccount),
+          ]);
 
         if (!isMounted) {
           return;
@@ -47,6 +52,8 @@ export const useApiSettings = () => {
         setSettings((prev) => ({
           gitlabBaseUrl: gitlabRecord?.value ?? prev.gitlabBaseUrl,
           githubBaseUrl: githubRecord?.value ?? prev.githubBaseUrl,
+          cloudflareAccountId:
+            cloudflareAccount?.value ?? prev.cloudflareAccountId,
         }));
       } catch (error) {
         console.error("Failed to load API settings", error);
@@ -93,6 +100,15 @@ export const useApiSettings = () => {
           );
         }
 
+        if (partial.cloudflareAccountId !== undefined) {
+          tasks.push(
+            db.settings.put({
+              key: SETTINGS_KEYS.cloudflareAccount,
+              value: next.cloudflareAccountId,
+            })
+          );
+        }
+
         try {
           await Promise.all(tasks);
         } catch (error) {
@@ -118,6 +134,7 @@ export const useApiSettings = () => {
         await db.settings.bulkDelete([
           SETTINGS_KEYS.gitlab,
           SETTINGS_KEYS.github,
+          SETTINGS_KEYS.cloudflareAccount,
         ]);
       } catch (error) {
         console.error("Failed to reset API settings", error);

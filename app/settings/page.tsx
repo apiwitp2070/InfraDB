@@ -16,8 +16,10 @@ export default function TokenSettingsPage() {
   const { settings: apiSettings, updateSettings } = useApiSettings();
   const [gitlabToken, setGitlabToken] = useState("");
   const [githubToken, setGithubToken] = useState("");
+  const [cloudflareToken, setCloudflareToken] = useState("");
   const [gitlabBaseUrl, setGitlabBaseUrl] = useState("");
   const [githubBaseUrl, setGithubBaseUrl] = useState("");
+  const [cloudflareAccountId, setCloudflareAccountId] = useState("");
   const [feedback, setFeedback] = useState<string | null>(null);
   const [feedbackType, setFeedbackType] = useState<"saved" | "cleared" | null>(
     null
@@ -30,12 +32,16 @@ export default function TokenSettingsPage() {
 
     setGitlabToken(tokens.gitlab);
     setGithubToken(tokens.github);
+    setCloudflareToken(tokens.cloudflare);
     setGitlabBaseUrl(apiSettings.gitlabBaseUrl);
     setGithubBaseUrl(apiSettings.githubBaseUrl);
+    setCloudflareAccountId(apiSettings.cloudflareAccountId);
   }, [
+    apiSettings.cloudflareAccountId,
     apiSettings.githubBaseUrl,
     apiSettings.gitlabBaseUrl,
     isReady,
+    tokens.cloudflare,
     tokens.github,
     tokens.gitlab,
   ]);
@@ -49,16 +55,22 @@ export default function TokenSettingsPage() {
       tokens.gitlab !== gitlabToken.trim() ||
       tokens.github !== githubToken.trim() ||
       apiSettings.gitlabBaseUrl !== gitlabBaseUrl.trim() ||
-      apiSettings.githubBaseUrl !== githubBaseUrl.trim()
+      tokens.cloudflare !== cloudflareToken.trim() ||
+      apiSettings.githubBaseUrl !== githubBaseUrl.trim() ||
+      apiSettings.cloudflareAccountId !== cloudflareAccountId.trim()
     );
   }, [
+    apiSettings.cloudflareAccountId,
     apiSettings.githubBaseUrl,
     apiSettings.gitlabBaseUrl,
+    cloudflareAccountId,
+    cloudflareToken,
     gitlabBaseUrl,
     gitlabToken,
     githubBaseUrl,
     githubToken,
     isReady,
+    tokens.cloudflare,
     tokens.github,
     tokens.gitlab,
   ]);
@@ -77,9 +89,11 @@ export default function TokenSettingsPage() {
   const handleSave = () => {
     setToken("gitlab", gitlabToken.trim());
     setToken("github", githubToken.trim());
+    setToken("cloudflare", cloudflareToken.trim());
     updateSettings({
       gitlabBaseUrl: gitlabBaseUrl.trim() || gitLabApiBaseUrl,
       githubBaseUrl: githubBaseUrl.trim() || githubApiBaseUrl,
+      cloudflareAccountId: cloudflareAccountId.trim(),
     });
     setFeedback("Tokens saved");
     setFeedbackType("saved");
@@ -89,6 +103,7 @@ export default function TokenSettingsPage() {
     clearTokens();
     setGitlabToken("");
     setGithubToken("");
+    setCloudflareToken("");
     setFeedback("Tokens cleared");
     setFeedbackType("cleared");
   };
@@ -98,8 +113,8 @@ export default function TokenSettingsPage() {
       <div className="flex flex-col items-start gap-1">
         <h1 className="text-xl font-semibold">Personal Access Tokens</h1>
         <p className="text-sm text-default-500">
-          Tokens persist inside browser IndexedDB. Provide tokens with the
-          required scopes to interact with GitLab and GitHub APIs.
+          Tokens persist inside browser IndexedDB. Provide credentials with the
+          required scopes to interact with GitLab, GitHub, and Cloudflare APIs.
         </p>
       </div>
 
@@ -163,6 +178,35 @@ export default function TokenSettingsPage() {
         />
       </section>
 
+      <Divider />
+
+      <section className="flex flex-col gap-4">
+        <div>
+          <h2 className="text-base font-medium">Cloudflare Token</h2>
+          <p className="text-xs text-default-500">
+            Requires permissions to manage R2 buckets and dev domains.
+          </p>
+        </div>
+        <Input
+          isDisabled={!isReady}
+          label="Cloudflare API Token"
+          labelPlacement="outside"
+          placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          type="password"
+          autoComplete="new-password"
+          value={cloudflareToken}
+          onValueChange={setCloudflareToken}
+        />
+        <Input
+          isDisabled={!isReady}
+          label="Cloudflare Account ID"
+          labelPlacement="outside"
+          placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          value={cloudflareAccountId}
+          onValueChange={setCloudflareAccountId}
+        />
+      </section>
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           {feedback ? (
@@ -177,7 +221,10 @@ export default function TokenSettingsPage() {
         </div>
         <div className="flex items-center gap-2">
           <Button
-            isDisabled={!isReady || (!tokens.gitlab && !tokens.github)}
+            isDisabled={
+              !isReady ||
+              (!tokens.gitlab && !tokens.github && !tokens.cloudflare)
+            }
             variant="light"
             onPress={handleClear}
           >

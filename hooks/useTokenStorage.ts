@@ -9,11 +9,13 @@ import { db } from "@/lib/db";
 const STORAGE_KEYS: Record<TokenKind, string> = {
   github: "github",
   gitlab: "gitlab",
+  cloudflare: "cloudflare",
 };
 
 const DEFAULT_TOKENS: Record<TokenKind, string> = {
   github: "",
   gitlab: "",
+  cloudflare: "",
 };
 
 export const useTokenStorage = () => {
@@ -32,18 +34,27 @@ export const useTokenStorage = () => {
           return;
         }
 
-        const [githubRecord, gitlabRecord] = await Promise.all([
-          db.tokens.get(STORAGE_KEYS.github),
-          db.tokens.get(STORAGE_KEYS.gitlab),
-        ]);
+        const entries = await Promise.all(
+          (Object.entries(STORAGE_KEYS) as [TokenKind, string][]).map(
+            async ([kind, key]) => {
+              const record = await db.tokens.get(key);
+              return [kind, record?.value ?? ""] as const;
+            }
+          )
+        );
 
         if (!isMounted) {
           return;
         }
 
-        setTokens({
-          github: githubRecord?.value ?? "",
-          gitlab: gitlabRecord?.value ?? "",
+        setTokens((prev) => {
+          const next = { ...prev };
+
+          for (const [kind, value] of entries) {
+            next[kind] = value;
+          }
+
+          return next;
         });
       } catch (error) {
         console.error("Failed to load tokens from IndexedDB", error);
@@ -92,10 +103,7 @@ export const useTokenStorage = () => {
       }
 
       try {
-        await db.tokens.bulkDelete([
-          STORAGE_KEYS.github,
-          STORAGE_KEYS.gitlab,
-        ]);
+        await db.tokens.bulkDelete(Object.values(STORAGE_KEYS));
       } catch (error) {
         console.error("Failed to clear tokens", error);
       }
@@ -105,8 +113,9 @@ export const useTokenStorage = () => {
   }, []);
 
   const hasTokens = useMemo(
-    () => Boolean(tokens.github || tokens.gitlab),
-    [tokens.github, tokens.gitlab]
+    () =>
+      Boolean(tokens.github || tokens.gitlab || tokens.cloudflare),
+    [tokens.cloudflare, tokens.github, tokens.gitlab]
   );
 
   return { tokens, setToken, clearTokens, isReady, hasTokens };

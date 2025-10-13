@@ -235,6 +235,17 @@ export default function GitLabPipelinesPage() {
           description="Add your project to the list with methods below."
         />
 
+        <GitlabProjectSearch
+          baseUrl={apiSettings.gitlabBaseUrl}
+          clearAlertMessage={toast.clearMessage}
+          existingProjectIds={projects.map((project) => project.id)}
+          gitlabToken={tokens.gitlab}
+          setAlertMessage={toast.setMessage}
+          onProjectAdd={async (project) => {
+            await loadProject(String(project.id), project);
+          }}
+        />
+
         <div className="flex flex-col gap-3 md:flex-row md:items-end">
           <Input
             label="Project ID"
@@ -256,17 +267,6 @@ export default function GitLabPipelinesPage() {
             Add project
           </Button>
         </div>
-
-        <GitlabProjectSearch
-          baseUrl={apiSettings.gitlabBaseUrl}
-          clearAlertMessage={toast.clearMessage}
-          existingProjectIds={projects.map((project) => project.id)}
-          gitlabToken={tokens.gitlab}
-          setAlertMessage={toast.setMessage}
-          onProjectAdd={async (project) => {
-            await loadProject(String(project.id), project);
-          }}
-        />
       </section>
 
       <StepTitle
