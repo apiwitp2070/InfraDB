@@ -180,9 +180,10 @@ export default function CloudflareR2Page() {
       valueToCopy +=
         formValue.bucketNameKey + "=" + createdBucket?.bucket.name + "\n";
       valueToCopy +=
-        formValue.bucketDomainKey + "=" + enableUrlPrefix
-          ? "https://"
-          : "" + createdBucket?.devDomain.domain;
+        formValue.bucketDomainKey +
+        "=" +
+        (enableUrlPrefix ? "https://" : "") +
+        createdBucket?.devDomain.domain;
 
       try {
         await navigator.clipboard.writeText(valueToCopy);
