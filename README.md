@@ -4,6 +4,8 @@ InfraDB (read as Infra dashboard) let you shorten some of your repetitive workfl
 
 > ⚠️ This project is intend to be used with private environment. Sensitive data are stored in the browser's storage locally. Treat this project as a private/personal tool and avoid using it on shared or untrusted machines.
 
+Demo (Kind of) is available here: [Visit Site](https://infradb.netlify.app)
+
 ## Features
 
 ### Gitlab
