@@ -1,8 +1,12 @@
 "use server";
 
-import Cloudflare from "cloudflare";
+import type {
+  CloudflareDnsRecord,
+  CloudflareDnsRecordType,
+  CloudflareZone,
+} from "@/types/cloudflare";
 
-import type { CloudflareDnsRecord, CloudflareDnsRecordType, CloudflareZone } from "@/types/cloudflare";
+import Cloudflare from "cloudflare";
 
 type ListZonesInput = {
   token: string;
