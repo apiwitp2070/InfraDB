@@ -24,6 +24,10 @@ export const siteConfig = {
       label: "Cloudflare R2",
       href: "/cloudflare/r2",
     },
+    {
+      label: "Cloudflare DNS",
+      href: "/cloudflare/dns",
+    },
   ],
   navMenuItems: [
     {
@@ -45,6 +49,10 @@ export const siteConfig = {
     {
       label: "Cloudflare R2",
       href: "/cloudflare/r2",
+    },
+    {
+      label: "Cloudflare DNS",
+      href: "/cloudflare/dns",
     },
     {
       label: "Settings",
@@ -88,6 +96,11 @@ export const siteConfig = {
         {
           label: "R2 Buckets",
           href: "/cloudflare/r2",
+          color: "bg-secondary-200",
+        },
+        {
+          label: "DNS Records",
+          href: "/cloudflare/dns",
           color: "bg-secondary-200",
         },
       ],

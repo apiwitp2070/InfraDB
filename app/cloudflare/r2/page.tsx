@@ -16,6 +16,8 @@ import {
   TableCell,
 } from "@heroui/table";
 
+import { createCloudflareR2Bucket } from "./actions";
+
 import { useApiSettings } from "@/hooks/useApiSettings";
 import { useToastMessage } from "@/hooks/useToastMessage";
 import { useTokenStorage } from "@/hooks/useTokenStorage";
@@ -60,7 +62,7 @@ export default function CloudflareR2Page() {
 
   const isReady = areTokensReady && areSettingsReady;
   const hasCredentials = Boolean(
-    tokens.cloudflare && apiSettings.cloudflareAccountId
+    tokens.cloudflare && apiSettings.cloudflareAccountId,
   );
 
   const pageExternalLink = [
@@ -100,28 +102,12 @@ export default function CloudflareR2Page() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("/api/cloudflare/r2", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          bucketName: trimmedBucket,
-          accountId: apiSettings.cloudflareAccountId,
-          token: tokens.cloudflare,
-          enableDevDomain: enableDevDomain,
-        } satisfies CreateR2BucketBody),
-      });
-
-      const payload = (await response.json()) as CreateR2BucketResponse;
-
-      if (!response.ok) {
-        throw new Error("Failed to create bucket");
-      }
-
-      if (!payload.bucket) {
-        throw new Error("Unexpected API response.");
-      }
+      const payload = await createCloudflareR2Bucket({
+        bucketName: trimmedBucket,
+        accountId: apiSettings.cloudflareAccountId,
+        token: tokens.cloudflare,
+        enableDevDomain: enableDevDomain,
+      } satisfies CreateR2BucketBody);
 
       setCreatedBucket(payload);
 
@@ -166,7 +152,7 @@ export default function CloudflareR2Page() {
         });
       }
     },
-    [createdBucket?.devDomain.domain, toast]
+    [createdBucket?.devDomain.domain, toast],
   );
 
   const handleCopyAsEnvValue = useCallback(
@@ -198,7 +184,7 @@ export default function CloudflareR2Page() {
         });
       }
     },
-    [createdBucket, toast]
+    [createdBucket, toast],
   );
 
   return (

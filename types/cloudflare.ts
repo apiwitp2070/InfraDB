@@ -17,3 +17,22 @@ export type CreateR2BucketResponse = {
     enabled: boolean;
   };
 };
+
+export type CloudflareZone = {
+  id: string;
+  name: string;
+  status?: string;
+};
+
+import type { RecordListParams } from "cloudflare/resources/dns/records";
+
+export type CloudflareDnsRecordType = NonNullable<RecordListParams["type"]>;
+
+export type CloudflareDnsRecord = {
+  id: string;
+  type: CloudflareDnsRecordType;
+  name: string;
+  content: string;
+  proxied?: boolean;
+  ttl?: number;
+};
