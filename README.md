@@ -21,6 +21,7 @@ Demo (Kind of) is available here: [Visit Site](https://infradb.netlify.app)
 ### Cloudflare
 
 - Create Cloudflare R2 buckets from a single dashboard and automatically enable the dev domain.
+- List, create and update your DNS records.
 
 ## Running Development Server
 
@@ -51,3 +52,6 @@ bun dev
 1. Token is required to be set before using the service. Visit the Settings page from top-right key icon to setup your tokens. You don't need to set token for all of available service. Just configure for the one you need.
 
 2. After setting your token, you should be able to use the service normally.
+
+## Limitation
+1. Currently there are no account system. token are sored locally and only one token can be used at a time.
