@@ -4,19 +4,13 @@ import type { TokenKind } from "@/types/token";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { db } from "@/lib/db";
-
-const STORAGE_KEYS: Record<TokenKind, string> = {
-  github: "github",
-  gitlab: "gitlab",
-  cloudflare: "cloudflare",
-};
-
-const DEFAULT_TOKENS: Record<TokenKind, string> = {
-  github: "",
-  gitlab: "",
-  cloudflare: "",
-};
+import {
+  DEFAULT_TOKENS,
+  clearTokens,
+  getToken,
+  getTokens,
+  saveToken,
+} from "@/services/token-service";
 
 export const useTokenStorage = () => {
   const [tokens, setTokens] = useState<Record<TokenKind, string>>({
@@ -29,35 +23,15 @@ export const useTokenStorage = () => {
 
     const loadTokens = async () => {
       try {
-        if (typeof window === "undefined") {
-          setIsReady(true);
-          return;
-        }
-
-        const entries = await Promise.all(
-          (Object.entries(STORAGE_KEYS) as [TokenKind, string][]).map(
-            async ([kind, key]) => {
-              const record = await db.tokens.get(key);
-              return [kind, record?.value ?? ""] as const;
-            }
-          )
-        );
+        const storedTokens = await getTokens();
 
         if (!isMounted) {
           return;
         }
 
-        setTokens((prev) => {
-          const next = { ...prev };
-
-          for (const [kind, value] of entries) {
-            next[kind] = value;
-          }
-
-          return next;
-        });
+        setTokens(storedTokens);
       } catch (error) {
-        console.error("Failed to load tokens from IndexedDB", error);
+        console.error("Failed to load tokens", error);
       } finally {
         if (isMounted) {
           setIsReady(true);
@@ -74,63 +48,28 @@ export const useTokenStorage = () => {
 
   const setToken = useCallback((kind: TokenKind, value: string) => {
     setTokens((prev) => ({ ...prev, [kind]: value }));
-
-    const persist = async () => {
-      if (typeof window === "undefined") {
-        return;
-      }
-
-      try {
-        if (value) {
-          await db.tokens.put({ key: STORAGE_KEYS[kind], value });
-        } else {
-          await db.tokens.delete(STORAGE_KEYS[kind]);
-        }
-      } catch (error) {
-        console.error("Failed to persist token", error);
-      }
-    };
-
-    void persist();
+    void saveToken(kind, value);
   }, []);
 
-  const clearTokens = useCallback(() => {
+  const handleClearTokens = useCallback(() => {
     setTokens({ ...DEFAULT_TOKENS });
-
-    const clear = async () => {
-      if (typeof window === "undefined") {
-        return;
-      }
-
-      try {
-        await db.tokens.bulkDelete(Object.values(STORAGE_KEYS));
-      } catch (error) {
-        console.error("Failed to clear tokens", error);
-      }
-    };
-
-    void clear();
+    void clearTokens();
   }, []);
 
   const hasTokens = useMemo(
-    () =>
-      Boolean(tokens.github || tokens.gitlab || tokens.cloudflare),
-    [tokens.cloudflare, tokens.github, tokens.gitlab]
+    () => Boolean(tokens.github || tokens.gitlab || tokens.cloudflare),
+    [tokens.cloudflare, tokens.github, tokens.gitlab],
   );
 
-  return { tokens, setToken, clearTokens, isReady, hasTokens };
+  return {
+    tokens,
+    setToken,
+    clearTokens: handleClearTokens,
+    isReady,
+    hasTokens,
+  };
 };
 
 export const getTokenFromStorage = async (kind: TokenKind) => {
-  if (typeof window === "undefined") {
-    return "";
-  }
-
-  try {
-    const record = await db.tokens.get(STORAGE_KEYS[kind]);
-    return record?.value ?? "";
-  } catch (error) {
-    console.error("Failed to read token from IndexedDB", error);
-    return "";
-  }
+  return getToken(kind);
 };

@@ -1,30 +1,29 @@
 "use client";
 
 import { Card, CardHeader } from "@heroui/card";
-import { Alert } from "@heroui/alert";
 import Link from "next/link";
 
+import TokenAlertBox from "@/components/token-alert-box";
 import { siteConfig } from "@/config/site";
 import { useTokenStorage } from "@/hooks/useTokenStorage";
 
 export default function Home() {
   const { tokens, isReady } = useTokenStorage();
-  const hasGitlabToken = Boolean(tokens.gitlab);
-  const hasGithubToken = Boolean(tokens.github);
-  const hasCloudflareToken = Boolean(tokens.cloudflare);
-  const showMissingGitlabTokens = isReady && !hasGitlabToken;
-  const showMissingGithubTokens = isReady && !hasGithubToken;
-  const showMissingCloudflareToken = isReady && !hasCloudflareToken;
+
+  const missingTokens = [
+    { name: "GitLab", present: Boolean(tokens.gitlab) },
+    { name: "GitHub", present: Boolean(tokens.github) },
+    { name: "Cloudflare", present: Boolean(tokens.cloudflare) },
+  ].filter((t) => !t.present);
 
   return (
     <div className="flex flex-col items-center justify-center gap-6">
       <p className="font-bold text-3xl text-title">InfraDB</p>
 
-      {showMissingGitlabTokens && <TokenAlertBox module="GitLab" />}
-
-      {showMissingGithubTokens && <TokenAlertBox module="GitHub" />}
-
-      {showMissingCloudflareToken && <TokenAlertBox module="Cloudflare" />}
+      {isReady &&
+        missingTokens.map((token) => (
+          <TokenAlertBox key={token.name} module={token.name} />
+        ))}
 
       <p className="text-default-500">Quick Access</p>
 
@@ -43,26 +42,5 @@ export default function Home() {
         ))}
       </div>
     </div>
-  );
-}
-
-// utils
-
-function TokenAlertBox({ module }: { module: string }) {
-  return (
-    <Alert
-      variant="bordered"
-      color="warning"
-      className="w-full max-w-3xl bg-transparent"
-      title={`Connect your ${module} providers`}
-    >
-      <p>
-        Provide {module} user access token on the{" "}
-        <Link href="/settings" className="underline">
-          Settings
-        </Link>{" "}
-        page to start using related services.
-      </p>
-    </Alert>
   );
 }
