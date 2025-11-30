@@ -23,6 +23,7 @@ import { useToastMessage } from "@/hooks/useToastMessage";
 import { useTokenStorage } from "@/hooks/useTokenStorage";
 import PageTitle from "@/components/page-title";
 import StepTitle from "@/components/step-title";
+import TokenAlertBox from "@/components/token-alert-box";
 import { CreateR2BucketBody, CreateR2BucketResponse } from "@/types/cloudflare";
 
 const R2_ENV_BUCKET_DEFAULT_VALUE = "AWS_S3_BUCKET";
@@ -195,14 +196,7 @@ export default function CloudflareR2Page() {
         externalLink={pageExternalLink}
       />
 
-      {!hasCredentials && isReady && (
-        <section>
-          <p className="text-sm text-warning-600">
-            Add your Cloudflare token and account ID on the Settings page before
-            creating buckets.
-          </p>
-        </section>
-      )}
+      {!hasCredentials && isReady && <TokenAlertBox module="Cloudflare" />}
 
       <Divider />
 

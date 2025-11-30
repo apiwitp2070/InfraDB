@@ -12,6 +12,7 @@ import {
 } from "@heroui/table";
 
 import GitlabProjectSearch from "@/components/gitlab-project-search";
+import TokenAlertBox from "@/components/token-alert-box";
 import { useApiSettings } from "@/hooks/useApiSettings";
 import { useGitlabProjects } from "@/hooks/useGitlabProjects";
 import { useTokenStorage } from "@/hooks/useTokenStorage";
@@ -23,7 +24,7 @@ import {
 import { useToastMessage } from "@/hooks/useToastMessage";
 
 export default function GitLabProjectsPage() {
-  const { tokens } = useTokenStorage();
+  const { tokens, isReady } = useTokenStorage();
   const { settings: apiSettings } = useApiSettings();
   const { projects, upsertProject, removeProject } = useGitlabProjects();
   const toast = useToastMessage();
@@ -33,7 +34,7 @@ export default function GitLabProjectsPage() {
   const handleProjectAdd = async (project: GitLabProject) => {
     if (!tokens.gitlab) {
       throw new Error(
-        "GitLab token missing. Save it on the Settings page first."
+        "GitLab token missing. Save it on the Settings page first.",
       );
     }
 
@@ -69,6 +70,8 @@ export default function GitLabProjectsPage() {
         </p>
       </div>
 
+      {!tokens.gitlab && isReady ? <TokenAlertBox module="GitLab" /> : null}
+
       <Divider />
 
       <section className="flex flex-col gap-6">
@@ -98,21 +101,21 @@ export default function GitLabProjectsPage() {
               <TableColumn className="w-32">Action</TableColumn>
             </TableHeader>
             <TableBody>
-                {projects.map((project) => (
-                  <TableRow key={project.id}>
-                    <TableCell>
-                      <a
-                        className="text-primary underline-offset-2 hover:underline"
-                        href={project.webUrl}
-                        rel="noreferrer"
-                        target="_blank"
-                      >
-                        {project.name}
-                      </a>
-                    </TableCell>
-                    <TableCell className="font-mono text-xs">
-                      {project.id}
-                    </TableCell>
+              {projects.map((project) => (
+                <TableRow key={project.id}>
+                  <TableCell>
+                    <a
+                      className="text-primary underline-offset-2 hover:underline"
+                      href={project.webUrl}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      {project.name}
+                    </a>
+                  </TableCell>
+                  <TableCell className="font-mono text-xs">
+                    {project.id}
+                  </TableCell>
                   <TableCell>
                     <Button
                       color="danger"

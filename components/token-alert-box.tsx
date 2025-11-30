@@ -12,7 +12,7 @@ export default function TokenAlertBox({ module }: { module: string }) {
       title={`Connect your ${module} providers`}
     >
       <p>
-        Provide {module} user access token on the{" "}
+        Provide {module} access token on the{" "}
         <Link href="/settings" className="underline">
           Settings
         </Link>{" "}

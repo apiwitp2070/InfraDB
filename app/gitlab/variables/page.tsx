@@ -16,6 +16,7 @@ import { Switch } from "@heroui/switch";
 
 import GitlabProjectSearch from "@/components/gitlab-project-search";
 import VariableTable from "@/components/variable-table";
+import TokenAlertBox from "@/components/token-alert-box";
 import { useApiSettings } from "@/hooks/useApiSettings";
 import { useGitlabProjects } from "@/hooks/useGitlabProjects";
 import { useTokenStorage } from "@/hooks/useTokenStorage";
@@ -128,7 +129,7 @@ export default function GitLabVariablesPage() {
   const handleProjectAdd = async (project: GitLabProject) => {
     if (!tokens.gitlab) {
       throw new Error(
-        "GitLab token missing. Save it on the Settings page first."
+        "GitLab token missing. Save it on the Settings page first.",
       );
     }
 
@@ -159,6 +160,8 @@ export default function GitLabVariablesPage() {
           Update repository environment variables via API.
         </p>
       </div>
+
+      {!tokens.gitlab && isReady ? <TokenAlertBox module="GitLab" /> : null}
 
       <Divider />
 

@@ -1,7 +1,6 @@
 "use client";
 
 import { FormEvent, useCallback, useMemo, useState } from "react";
-import { Alert } from "@heroui/alert";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Divider } from "@heroui/divider";
@@ -28,6 +27,7 @@ import {
 
 import PageTitle from "@/components/page-title";
 import StepTitle from "@/components/step-title";
+import TokenAlertBox from "@/components/token-alert-box";
 import { useApiSettings } from "@/hooks/useApiSettings";
 import { useToastMessage } from "@/hooks/useToastMessage";
 import { useTokenStorage } from "@/hooks/useTokenStorage";
@@ -104,7 +104,7 @@ export default function CloudflareDnsPage() {
     const links = [];
 
     links.push({
-      title: "Open Cloudflare dashboard",
+      title: "Dashboard",
       url: `https://dash.cloudflare.com/${apiSettings.cloudflareAccountId}/home`,
     });
 
@@ -334,15 +334,7 @@ export default function CloudflareDnsPage() {
       />
 
       {!hasCredentials && isReady ? (
-        <Alert
-          color="warning"
-          title="Add Cloudflare credentials"
-          variant="flat"
-          className="max-w-3xl"
-        >
-          Provide your Cloudflare token and account ID on the Settings page to
-          load domains and DNS records.
-        </Alert>
+        <TokenAlertBox module="Cloudflare" />
       ) : null}
 
       <Divider />

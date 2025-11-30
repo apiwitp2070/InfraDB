@@ -17,6 +17,7 @@ import {
 
 import BranchStatusChip from "@/components/branch-status-chip";
 import GitlabProjectSearch from "@/components/gitlab-project-search";
+import TokenAlertBox from "@/components/token-alert-box";
 import { useApiSettings } from "@/hooks/useApiSettings";
 import { useGitlabProjects } from "@/hooks/useGitlabProjects";
 import { useTokenStorage } from "@/hooks/useTokenStorage";
@@ -51,11 +52,11 @@ export default function GitLabPipelinesPage() {
 
   const loadProject = async (
     projectId: string,
-    existingProject?: GitLabProject
+    existingProject?: GitLabProject,
   ) => {
     if (!tokens.gitlab) {
       throw new Error(
-        "GitLab token missing. Save it on the Settings page first."
+        "GitLab token missing. Save it on the Settings page first.",
       );
     }
 
@@ -126,10 +127,10 @@ export default function GitLabPipelinesPage() {
           branches: project.branches.map((branch) =>
             branch.name === branchName
               ? { ...branch, status: "triggering", error: undefined }
-              : branch
+              : branch,
           ),
         };
-      })
+      }),
     );
 
     try {
@@ -155,10 +156,10 @@ export default function GitLabPipelinesPage() {
                     status: "success",
                     lastTriggeredAt: new Date().toLocaleString(),
                   }
-                : branch
+                : branch,
             ),
           };
-        })
+        }),
       );
 
       toast.setMessage({
@@ -179,10 +180,10 @@ export default function GitLabPipelinesPage() {
             branches: project.branches.map((branch) =>
               branch.name === branchName
                 ? { ...branch, status: "error", error: text }
-                : branch
+                : branch,
             ),
           };
-        })
+        }),
       );
 
       toast.setMessage({ type: "error", text });
@@ -226,6 +227,8 @@ export default function GitLabPipelinesPage() {
           Load projects, browse branches, and trigger pipelines instantly.
         </p>
       </div>
+
+      {!tokens.gitlab && isReady ? <TokenAlertBox module="GitLab" /> : null}
 
       <Divider />
 
@@ -405,7 +408,7 @@ export default function GitLabPipelinesPage() {
                                 <Chip
                                   className="capitalize"
                                   color={getPipelineStatusColor(
-                                    pipeline.status
+                                    pipeline.status,
                                   )}
                                   size="sm"
                                   variant="flat"

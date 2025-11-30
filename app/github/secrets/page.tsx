@@ -16,6 +16,7 @@ import {
 } from "@/lib/github";
 import { parseEnvInput } from "@/utils/variable";
 import VariableTable from "@/components/variable-table";
+import TokenAlertBox from "@/components/token-alert-box";
 import { VariableStatus } from "@/types/variable";
 
 export default function GitHubSecretsPage() {
@@ -131,6 +132,8 @@ export default function GitHubSecretsPage() {
           ignored.
         </p>
       </div>
+
+      {!tokens.github && isReady ? <TokenAlertBox module="GitHub" /> : null}
 
       <Divider />
 
