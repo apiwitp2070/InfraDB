@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Check, Copy } from "lucide-react";
 
 import { EyeFilledIcon, EyeSlashFilledIcon } from "@/components/icons";
+import { copyToClipboard } from "@/utils/clipboard";
 
 export default function InputPassword(props: InputProps) {
   const [isVisible, setIsVisible] = useState(false);
@@ -23,16 +24,7 @@ export default function InputPassword(props: InputProps) {
     if (!textToCopy) return;
 
     try {
-      if (navigator?.clipboard?.writeText) {
-        await navigator.clipboard.writeText(textToCopy);
-      } else {
-        const textArea = document.createElement("textarea");
-        textArea.value = textToCopy;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand("copy");
-        document.body.removeChild(textArea);
-      }
+      await copyToClipboard(textToCopy);
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
     } catch (err) {

@@ -12,7 +12,7 @@ import {
   ModalFooter,
   ModalHeader,
 } from "@heroui/modal";
-
+import { Check, Copy } from "lucide-react";
 
 import InputPassword from "@/components/input-password";
 import { useApiSettings } from "@/hooks/useApiSettings";
@@ -20,6 +20,7 @@ import { useToastMessage } from "@/hooks/useToastMessage";
 import { useTokenStorage } from "@/hooks/useTokenStorage";
 import { gitLabApiBaseUrl } from "@/lib/gitlab";
 import { githubApiBaseUrl } from "@/lib/github";
+import { copyToClipboard } from "@/utils/clipboard";
 import { parseEnvInput } from "@/utils/variable";
 
 import {
@@ -47,6 +48,7 @@ export default function TokenSettingsPage() {
     "import" | "export" | null
   >(null);
   const [importText, setImportText] = useState("");
+  const [isExportCopied, setIsExportCopied] = useState(false);
   const [isTestingGitlab, setIsTestingGitlab] = useState(false);
   const [isTestingGithub, setIsTestingGithub] = useState(false);
   const [isTestingCloudflare, setIsTestingCloudflare] = useState(false);
@@ -238,6 +240,20 @@ export default function TokenSettingsPage() {
     githubBaseUrl,
     githubToken,
   ]);
+
+  const handleCopyExport = async () => {
+    try {
+      await copyToClipboard(exportText);
+      setIsExportCopied(true);
+      setTimeout(() => setIsExportCopied(false), 2000);
+    } catch (error) {
+      console.error("Failed to copy to clipboard", error);
+      toast.setMessage({
+        type: "error",
+        text: "Unable to copy settings to the clipboard.",
+      });
+    }
+  };
 
   const handleImport = () => {
     if (!isReady) {
@@ -555,21 +571,42 @@ export default function TokenSettingsPage() {
                   />
                 )}
               </ModalBody>
-              <ModalFooter>
-                <Button
-                  variant="light"
-                  onPress={() => handleCloseImportExport()}
-                >
-                  Close
-                </Button>
+              <ModalFooter
+                className={
+                  importExportMode === "import" ? undefined : "justify-between"
+                }
+              >
                 {importExportMode === "import" ? (
-                  <Button color="primary" onPress={handleImport}>
-                    Import
-                  </Button>
+                  <>
+                    <Button
+                      variant="light"
+                      onPress={() => handleCloseImportExport()}
+                    >
+                      Close
+                    </Button>
+                    <Button color="primary" onPress={handleImport}>
+                      Import
+                    </Button>
+                  </>
                 ) : (
-                  <Button color="primary" onPress={() => onClose()}>
-                    Done
-                  </Button>
+                  <>
+                    <Button
+                      startContent={
+                        isExportCopied ? (
+                          <Check className="h-4 w-4 text-success" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )
+                      }
+                      variant="flat"
+                      onPress={handleCopyExport}
+                    >
+                      {isExportCopied ? "Copied" : "Copy"}
+                    </Button>
+                    <Button color="primary" onPress={() => onClose()}>
+                      Done
+                    </Button>
+                  </>
                 )}
               </ModalFooter>
             </>
