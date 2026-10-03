@@ -13,8 +13,15 @@ import {
   ModalHeader,
 } from "@heroui/modal";
 
+import {
+  testCloudflareToken,
+  testGitHubToken,
+  testGitLabToken,
+} from "./actions";
+
 import InputPassword from "@/components/input-password";
 import { useApiSettings } from "@/hooks/useApiSettings";
+import { useToastMessage } from "@/hooks/useToastMessage";
 import { useTokenStorage } from "@/hooks/useTokenStorage";
 import { gitLabApiBaseUrl } from "@/lib/gitlab";
 import { githubApiBaseUrl } from "@/lib/github";
@@ -23,6 +30,7 @@ import { parseEnvInput } from "@/utils/variable";
 export default function TokenSettingsPage() {
   const { tokens, setToken, clearTokens, isReady } = useTokenStorage();
   const { settings: apiSettings, updateSettings } = useApiSettings();
+  const toast = useToastMessage();
   const [gitlabToken, setGitlabToken] = useState("");
   const [githubToken, setGithubToken] = useState("");
   const [cloudflareToken, setCloudflareToken] = useState("");
@@ -38,6 +46,75 @@ export default function TokenSettingsPage() {
     "import" | "export" | null
   >(null);
   const [importText, setImportText] = useState("");
+  const [isTestingGitlab, setIsTestingGitlab] = useState(false);
+  const [isTestingGithub, setIsTestingGithub] = useState(false);
+  const [isTestingCloudflare, setIsTestingCloudflare] = useState(false);
+
+  const handleTestGitlab = async () => {
+    setIsTestingGitlab(true);
+    try {
+      const res = await testGitLabToken(gitlabToken, gitlabBaseUrl);
+      toast.setMessage({
+        type: res.success ? "success" : "error",
+        text: res.message,
+      });
+    } catch (error) {
+      toast.setMessage({
+        type: "error",
+        text:
+          error instanceof Error
+            ? error.message
+            : "Failed to test GitLab token.",
+      });
+    } finally {
+      setIsTestingGitlab(false);
+    }
+  };
+
+  const handleTestGithub = async () => {
+    setIsTestingGithub(true);
+    try {
+      const res = await testGitHubToken(githubToken, githubBaseUrl);
+      toast.setMessage({
+        type: res.success ? "success" : "error",
+        text: res.message,
+      });
+    } catch (error) {
+      toast.setMessage({
+        type: "error",
+        text:
+          error instanceof Error
+            ? error.message
+            : "Failed to test GitHub token.",
+      });
+    } finally {
+      setIsTestingGithub(false);
+    }
+  };
+
+  const handleTestCloudflare = async () => {
+    setIsTestingCloudflare(true);
+    try {
+      const res = await testCloudflareToken(
+        cloudflareToken,
+        cloudflareAccountId,
+      );
+      toast.setMessage({
+        type: res.success ? "success" : "error",
+        text: res.message,
+      });
+    } catch (error) {
+      toast.setMessage({
+        type: "error",
+        text:
+          error instanceof Error
+            ? error.message
+            : "Failed to test Cloudflare token.",
+      });
+    } finally {
+      setIsTestingCloudflare(false);
+    }
+  };
 
   useEffect(() => {
     if (!isReady) {
@@ -278,11 +355,27 @@ export default function TokenSettingsPage() {
       <Divider />
 
       <section className="flex flex-col gap-4">
-        <div>
-          <h2 className="text-base font-medium">GitLab Token</h2>
-          <p className="text-xs text-default-500">
-            Needs api scope to manage variables and pipelines.
-          </p>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-medium">GitLab Token</h2>
+            <p className="text-xs text-default-500">
+              Needs api scope to manage variables and pipelines.
+            </p>
+          </div>
+          <Button
+            isDisabled={
+              !isReady ||
+              !gitlabToken.trim() ||
+              !gitlabBaseUrl.trim() ||
+              isTestingGitlab
+            }
+            isLoading={isTestingGitlab}
+            size="sm"
+            variant="flat"
+            onPress={handleTestGitlab}
+          >
+            Test API key
+          </Button>
         </div>
         <InputPassword
           isDisabled={!isReady}
@@ -307,11 +400,27 @@ export default function TokenSettingsPage() {
       <Divider />
 
       <section className="flex flex-col gap-4">
-        <div>
-          <h2 className="text-base font-medium">GitHub Token</h2>
-          <p className="text-xs text-default-500">
-            Needs repo scope to manage secrets.
-          </p>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-medium">GitHub Token</h2>
+            <p className="text-xs text-default-500">
+              Needs repo scope to manage secrets.
+            </p>
+          </div>
+          <Button
+            isDisabled={
+              !isReady ||
+              !githubToken.trim() ||
+              !githubBaseUrl.trim() ||
+              isTestingGithub
+            }
+            isLoading={isTestingGithub}
+            size="sm"
+            variant="flat"
+            onPress={handleTestGithub}
+          >
+            Test API key
+          </Button>
         </div>
         <InputPassword
           isDisabled={!isReady}
@@ -336,11 +445,27 @@ export default function TokenSettingsPage() {
       <Divider />
 
       <section className="flex flex-col gap-4">
-        <div>
-          <h2 className="text-base font-medium">Cloudflare Token</h2>
-          <p className="text-xs text-default-500">
-            Requires permissions to manage R2 buckets and dev domains.
-          </p>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-medium">Cloudflare Token</h2>
+            <p className="text-xs text-default-500">
+              Requires permissions to manage R2 buckets and dev domains.
+            </p>
+          </div>
+          <Button
+            isDisabled={
+              !isReady ||
+              !cloudflareToken.trim() ||
+              !cloudflareAccountId.trim() ||
+              isTestingCloudflare
+            }
+            isLoading={isTestingCloudflare}
+            size="sm"
+            variant="flat"
+            onPress={handleTestCloudflare}
+          >
+            Test API key
+          </Button>
         </div>
         <InputPassword
           isDisabled={!isReady}

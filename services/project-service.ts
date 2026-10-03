@@ -1,9 +1,10 @@
-import { db } from "@/lib/db";
 import type {
   PipelineProjectState,
   PipelineSummary,
   StoredProject,
 } from "@/types/pipeline";
+
+import { db } from "@/lib/db";
 
 const reviveProjects = (stored: StoredProject[]): PipelineProjectState[] =>
   stored.map((project) => ({

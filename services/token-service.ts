@@ -1,5 +1,6 @@
-import { db } from "@/lib/db";
 import type { TokenKind } from "@/types/token";
+
+import { db } from "@/lib/db";
 
 const STORAGE_KEYS: Record<TokenKind, string> = {
   github: "github",
