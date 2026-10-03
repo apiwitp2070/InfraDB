@@ -13,11 +13,6 @@ import {
   ModalHeader,
 } from "@heroui/modal";
 
-import {
-  testCloudflareToken,
-  testGitHubToken,
-  testGitLabToken,
-} from "./actions";
 
 import InputPassword from "@/components/input-password";
 import { useApiSettings } from "@/hooks/useApiSettings";
@@ -26,6 +21,12 @@ import { useTokenStorage } from "@/hooks/useTokenStorage";
 import { gitLabApiBaseUrl } from "@/lib/gitlab";
 import { githubApiBaseUrl } from "@/lib/github";
 import { parseEnvInput } from "@/utils/variable";
+
+import {
+  testCloudflareToken,
+  testGitHubToken,
+  testGitLabToken,
+} from "./actions";
 
 export default function TokenSettingsPage() {
   const { tokens, setToken, clearTokens, isReady } = useTokenStorage();

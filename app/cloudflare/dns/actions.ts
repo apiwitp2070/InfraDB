@@ -46,14 +46,18 @@ const sanitizeToken = (raw: string | undefined): string => {
     .trim();
 };
 
-const mapRecord = (record: any): CloudflareDnsRecord => ({
-  id: record.id,
-  type: record.type,
-  name: record.name,
-  content: record.content,
-  proxied: record.proxied,
-  ttl: record.ttl,
-});
+const mapRecord = (raw: object): CloudflareDnsRecord => {
+  const record = raw as CloudflareDnsRecord;
+
+  return {
+    id: record.id,
+    type: record.type,
+    name: record.name,
+    content: record.content,
+    proxied: record.proxied,
+    ttl: record.ttl,
+  };
+};
 
 export const listCloudflareZones = async ({
   token,

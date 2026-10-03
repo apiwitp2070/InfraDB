@@ -18,12 +18,6 @@ import {
 } from "@heroui/table";
 import { Spinner } from "@heroui/spinner";
 
-import {
-  deleteCloudflareRecord,
-  listCloudflareRecords,
-  listCloudflareZones,
-  upsertCloudflareRecord,
-} from "./actions";
 
 import PageTitle from "@/components/page-title";
 import StepTitle from "@/components/step-title";
@@ -36,6 +30,13 @@ import {
   CloudflareDnsRecordType,
   CloudflareZone,
 } from "@/types/cloudflare";
+
+import {
+  deleteCloudflareRecord,
+  listCloudflareRecords,
+  listCloudflareZones,
+  upsertCloudflareRecord,
+} from "./actions";
 
 const DNS_RECORD_TYPES: CloudflareDnsRecordType[] = [
   "A",

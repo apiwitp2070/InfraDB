@@ -16,7 +16,6 @@ import {
   TableCell,
 } from "@heroui/table";
 
-import { createCloudflareR2Bucket } from "./actions";
 
 import { useApiSettings } from "@/hooks/useApiSettings";
 import { useToastMessage } from "@/hooks/useToastMessage";
@@ -25,6 +24,8 @@ import PageTitle from "@/components/page-title";
 import StepTitle from "@/components/step-title";
 import TokenAlertBox from "@/components/token-alert-box";
 import { CreateR2BucketBody, CreateR2BucketResponse } from "@/types/cloudflare";
+
+import { createCloudflareR2Bucket } from "./actions";
 
 const R2_ENV_BUCKET_DEFAULT_VALUE = "AWS_S3_BUCKET";
 const R2_ENV_DOMAIN_DEFAULT_VALUE = "PUBLIC_FILE_URL";

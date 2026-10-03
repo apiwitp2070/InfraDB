@@ -8,9 +8,10 @@ import {
 } from "@heroui/table";
 import clsx from "clsx";
 
+import { VariableStatus } from "@/types/variable";
+
 import StatusChip from "./variable-status-chip";
 
-import { VariableStatus } from "@/types/variable";
 
 interface VariableTableProps {
   data: {
