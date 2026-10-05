@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useMemo, useState } from "react";
+import { FormEvent, Fragment, useCallback, useMemo, useState } from "react";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Divider } from "@heroui/divider";
@@ -72,21 +72,11 @@ export default function CloudflareDnsPage() {
   const [selectedZoneId, setSelectedZoneId] = useState("");
   const [records, setRecords] = useState<CloudflareDnsRecord[]>([]);
   const [isLoadingRecords, setIsLoadingRecords] = useState(false);
+  const [isCreatingRecord, setIsCreatingRecord] = useState(false);
   const [isSavingRecord, setIsSavingRecord] = useState(false);
   const [deletingRecordId, setDeletingRecordId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [formDefaults, setFormDefaults] = useState<{
-    type: CloudflareDnsRecordType;
-    name: string;
-    content: string;
-    proxied: boolean;
-  }>({
-    type: "A",
-    name: "",
-    content: "",
-    proxied: true,
-  });
-  const [formResetKey, setFormResetKey] = useState(0);
+  const [createResetKey, setCreateResetKey] = useState(0);
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
 
   const isReady = areTokensReady && areSettingsReady;
@@ -145,7 +135,6 @@ export default function CloudflareDnsPage() {
         });
         setRecords(fetchedRecords ?? []);
         setEditingRecordId(null);
-        resetRecordForm();
       } catch (error) {
         const text = error instanceof Error ? error.message : String(error);
         toast.setMessage({ type: "error", text });
@@ -202,18 +191,73 @@ export default function CloudflareDnsPage() {
     tokens.cloudflare,
   ]);
 
-  const resetRecordForm = () => {
-    setFormDefaults({
-      type: "A",
-      name: "",
-      content: "",
-      proxied: true,
-    });
-    setFormResetKey((prev) => prev + 1);
-    setEditingRecordId(null);
+  const handleCreateRecord = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!selectedZoneId) {
+      toast.setMessage({ type: "error", text: "Select a domain first." });
+      return;
+    }
+
+    const formData = new FormData(event.currentTarget);
+    const recordType = (formData.get("recordType") as string | null)?.trim();
+    const recordName =
+      (formData.get("recordName") as string | null)?.trim() ?? "";
+    const recordContent =
+      (formData.get("recordContent") as string | null)?.trim() ?? "";
+    const recordProxied = formData.get("recordProxied") !== null;
+
+    if (!recordType) {
+      toast.setMessage({
+        type: "error",
+        text: "Record type is required.",
+      });
+      return;
+    }
+
+    if (!recordName.length || !recordContent.length) {
+      toast.setMessage({
+        type: "error",
+        text: "Record name and content are required.",
+      });
+      return;
+    }
+
+    setIsCreatingRecord(true);
+    toast.clearMessage();
+
+    try {
+      await upsertCloudflareRecord({
+        token: tokens.cloudflare,
+        zoneId: selectedZoneId,
+        record: {
+          type: recordType as CloudflareDnsRecordType,
+          name: recordName,
+          content: recordContent,
+          proxied: recordProxied,
+        },
+      });
+
+      toast.setMessage({
+        type: "success",
+        text: "Record created.",
+      });
+
+      setCreateResetKey((prev) => prev + 1);
+      // refresh list
+      await handleLoadRecords(selectedZoneId, false);
+    } catch (error) {
+      const text = error instanceof Error ? error.message : String(error);
+      toast.setMessage({ type: "error", text });
+    } finally {
+      setIsCreatingRecord(false);
+    }
   };
 
-  const handleSubmitRecord = async (event: FormEvent<HTMLFormElement>) => {
+  const handleUpdateRecord = async (
+    event: FormEvent<HTMLFormElement>,
+    recordId: string,
+  ) => {
     event.preventDefault();
 
     if (!selectedZoneId) {
@@ -252,7 +296,7 @@ export default function CloudflareDnsPage() {
       await upsertCloudflareRecord({
         token: tokens.cloudflare,
         zoneId: selectedZoneId,
-        recordId: editingRecordId ?? undefined,
+        recordId,
         record: {
           type: recordType as CloudflareDnsRecordType,
           name: recordName,
@@ -263,12 +307,12 @@ export default function CloudflareDnsPage() {
 
       toast.setMessage({
         type: "success",
-        text: editingRecordId ? "Record updated." : "Record created.",
+        text: "Record updated.",
       });
 
+      setEditingRecordId(null);
       // refresh list
       await handleLoadRecords(selectedZoneId, false);
-      resetRecordForm();
     } catch (error) {
       const text = error instanceof Error ? error.message : String(error);
       toast.setMessage({ type: "error", text });
@@ -311,19 +355,13 @@ export default function CloudflareDnsPage() {
   const handleSelectZone = (zoneId: string) => {
     setSelectedZoneId(zoneId);
     setRecords([]);
-    resetRecordForm();
+    setEditingRecordId(null);
+    setCreateResetKey((prev) => prev + 1);
     void handleLoadRecords(zoneId);
   };
 
   const handleEditRecord = (record: CloudflareDnsRecord) => {
-    setEditingRecordId(record.id);
-    setFormDefaults({
-      type: record.type as CloudflareDnsRecordType,
-      name: record.name,
-      content: record.content,
-      proxied: Boolean(record.proxied),
-    });
-    setFormResetKey((prev) => prev + 1);
+    setEditingRecordId((prev) => (prev === record.id ? null : record.id));
   };
 
   return (
@@ -438,9 +476,7 @@ export default function CloudflareDnsPage() {
             <Card shadow="none" className="border border-default-200 mt-3">
               <CardHeader>
                 <div className="flex flex-col gap-1">
-                  <h3 className="text-base font-semibold">
-                    {editingRecordId ? "Edit record" : "Add record"}
-                  </h3>
+                  <h3 className="text-base font-semibold">Add record</h3>
                   <p className="text-xs text-default-500">
                     Supports Cloudflare DNS record types. TTL defaults to
                     Automatic.
@@ -450,29 +486,31 @@ export default function CloudflareDnsPage() {
               <Divider className="mx-0" />
               <CardBody className="flex flex-col gap-4">
                 <Form
-                  key={formResetKey}
+                  key={createResetKey}
                   className="flex flex-col gap-4 w-full"
-                  onSubmit={handleSubmitRecord}
+                  onSubmit={handleCreateRecord}
                 >
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 w-full">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 w-full md:items-end">
                     <Select
                       isRequired
                       name="recordType"
                       labelPlacement="outside"
                       label="Record type"
-                      defaultSelectedKeys={[formDefaults.type]}
+                      defaultSelectedKeys={["A"]}
                     >
                       {DNS_RECORD_TYPES.map((type) => (
                         <SelectItem key={type}>{type}</SelectItem>
                       ))}
                     </Select>
-                    <Switch
-                      name="recordProxied"
-                      value="true"
-                      defaultSelected={formDefaults.proxied}
-                    >
-                      Proxied
-                    </Switch>
+                    <div className="flex h-10 items-center">
+                      <Switch
+                        name="recordProxied"
+                        value="true"
+                        defaultSelected={true}
+                      >
+                        Proxied
+                      </Switch>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2 w-full">
@@ -482,7 +520,6 @@ export default function CloudflareDnsPage() {
                       label="Record name"
                       labelPlacement="outside"
                       placeholder="app.example.com"
-                      defaultValue={formDefaults.name}
                     />
                     <Input
                       isRequired
@@ -490,27 +527,17 @@ export default function CloudflareDnsPage() {
                       label="Record content"
                       labelPlacement="outside"
                       placeholder="Value or target"
-                      defaultValue={formDefaults.content}
                     />
                   </div>
 
-                  <div className="flex flex-wrap items-center justify-end gap-2">
-                    {editingRecordId ? (
-                      <Button
-                        type="button"
-                        variant="light"
-                        onPress={() => resetRecordForm()}
-                      >
-                        Cancel edit
-                      </Button>
-                    ) : null}
+                  <div className="flex w-full flex-wrap items-center justify-end gap-2">
                     <Button
                       color="primary"
                       isDisabled={!isReady}
-                      isLoading={isSavingRecord}
+                      isLoading={isCreatingRecord}
                       type="submit"
                     >
-                      {editingRecordId ? "Update record" : "Add record"}
+                      Add record
                     </Button>
                   </div>
                 </Form>
@@ -523,61 +550,187 @@ export default function CloudflareDnsPage() {
               </div>
             ) : records.length ? (
               <div className="w-full overflow-x-auto">
-                <Table
-                  removeWrapper
+                <table
                   aria-label={`DNS records for ${selectedZone.name}`}
-                  className="min-w-[720px]"
+                  className="min-w-[720px] w-full text-left border-collapse"
                 >
-                  <TableHeader>
-                    <TableColumn>Name</TableColumn>
-                    <TableColumn className="w-24">Type</TableColumn>
-                    <TableColumn>Content</TableColumn>
-                    <TableColumn className="w-24">Proxied</TableColumn>
-                    <TableColumn className="w-40">Action</TableColumn>
-                  </TableHeader>
-                  <TableBody emptyContent="No DNS records found.">
-                    {records.map((record) => (
-                      <TableRow key={record.id}>
-                        <TableCell className="font-mono text-xs">
-                          {record.name}
-                        </TableCell>
-                        <TableCell className="font-semibold">
-                          {record.type}
-                        </TableCell>
-                        <TableCell className="font-mono text-xs">
-                          {record.content}
-                        </TableCell>
-                        <TableCell>{record.proxied ? "Yes" : "No"}</TableCell>
-                        <TableCell className="min-w-[200px]">
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="flat"
-                              onPress={() => handleEditRecord(record)}
+                  <thead>
+                    <tr>
+                      <th className="px-3 h-10 bg-default-100 text-tiny font-semibold text-foreground-500 first:rounded-s-lg last:rounded-e-lg">
+                        Name
+                      </th>
+                      <th className="px-3 h-10 bg-default-100 text-tiny font-semibold text-foreground-500 w-24">
+                        Type
+                      </th>
+                      <th className="px-3 h-10 bg-default-100 text-tiny font-semibold text-foreground-500">
+                        Content
+                      </th>
+                      <th className="px-3 h-10 bg-default-100 text-tiny font-semibold text-foreground-500 w-24">
+                        Proxied
+                      </th>
+                      <th className="px-3 h-10 bg-default-100 text-tiny font-semibold text-foreground-500 w-40">
+                        Action
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-default-100">
+                    {records.map((record) => {
+                      const isEditing = editingRecordId === record.id;
+
+                      return (
+                        <Fragment key={record.id}>
+                          <tr
+                            className={
+                              isEditing
+                                ? "bg-default-50"
+                                : "hover:bg-default-50/50 transition-colors"
+                            }
+                          >
+                            <td className="py-2.5 px-3 font-mono text-xs">
+                              {record.name}
+                            </td>
+                            <td className="py-2.5 px-3 font-semibold text-sm">
+                              {record.type}
+                            </td>
+                            <td className="py-2.5 px-3 font-mono text-xs">
+                              {record.content}
+                            </td>
+                            <td className="py-2.5 px-3 text-sm">
+                              {record.proxied ? "Yes" : "No"}
+                            </td>
+                            <td className="py-2.5 px-3 min-w-[200px]">
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant={isEditing ? "flat" : "light"}
+                                  color={isEditing ? "primary" : "default"}
+                                  onPress={() => handleEditRecord(record)}
+                                >
+                                  {isEditing ? "Cancel" : "Edit"}
+                                </Button>
+                                <Button
+                                  color="danger"
+                                  size="sm"
+                                  variant="light"
+                                  isLoading={deletingRecordId === record.id}
+                                  onPress={() =>
+                                    handleDeleteRecord(record.id, record.name)
+                                  }
+                                >
+                                  Delete
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                          {isEditing ? (
+                            <tr
+                              key={`${record.id}-edit`}
+                              className="bg-default-50/60"
                             >
-                              Edit
-                            </Button>
-                            <Button
-                              color="danger"
-                              size="sm"
-                              variant="light"
-                              isLoading={deletingRecordId === record.id}
-                              onPress={() =>
-                                handleDeleteRecord(record.id, record.name)
-                              }
-                            >
-                              Delete
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                              <td colSpan={5} className="p-4">
+                                <Card
+                                  shadow="none"
+                                  className="border border-default-200 bg-background"
+                                >
+                                  <CardHeader>
+                                    <div className="flex flex-col gap-1">
+                                      <h4 className="text-base font-semibold">
+                                        Edit record ({record.name})
+                                      </h4>
+                                      <p className="text-xs text-default-500">
+                                        Supports Cloudflare DNS record types.
+                                        TTL defaults to Automatic.
+                                      </p>
+                                    </div>
+                                  </CardHeader>
+                                  <Divider className="mx-0" />
+                                  <CardBody className="flex flex-col gap-4">
+                                    <Form
+                                      className="flex flex-col gap-4 w-full"
+                                      onSubmit={(e) =>
+                                        handleUpdateRecord(e, record.id)
+                                      }
+                                    >
+                                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 w-full md:items-end">
+                                        <Select
+                                          isRequired
+                                          name="recordType"
+                                          labelPlacement="outside"
+                                          label="Record type"
+                                          defaultSelectedKeys={[record.type]}
+                                        >
+                                          {DNS_RECORD_TYPES.map((type) => (
+                                            <SelectItem key={type}>
+                                              {type}
+                                            </SelectItem>
+                                          ))}
+                                        </Select>
+                                        <div className="flex h-10 items-center">
+                                          <Switch
+                                            name="recordProxied"
+                                            value="true"
+                                            defaultSelected={Boolean(
+                                              record.proxied,
+                                            )}
+                                          >
+                                            Proxied
+                                          </Switch>
+                                        </div>
+                                      </div>
+
+                                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 w-full">
+                                        <Input
+                                          isRequired
+                                          name="recordName"
+                                          label="Record name"
+                                          labelPlacement="outside"
+                                          placeholder="app.example.com"
+                                          defaultValue={record.name}
+                                        />
+                                        <Input
+                                          isRequired
+                                          name="recordContent"
+                                          label="Record content"
+                                          labelPlacement="outside"
+                                          placeholder="Value or target"
+                                          defaultValue={record.content}
+                                        />
+                                      </div>
+
+                                      <div className="flex w-full flex-wrap items-center justify-end gap-2">
+                                        <Button
+                                          type="button"
+                                          variant="light"
+                                          onPress={() =>
+                                            setEditingRecordId(null)
+                                          }
+                                        >
+                                          Cancel edit
+                                        </Button>
+                                        <Button
+                                          color="primary"
+                                          isDisabled={!isReady}
+                                          isLoading={isSavingRecord}
+                                          type="submit"
+                                        >
+                                          Update record
+                                        </Button>
+                                      </div>
+                                    </Form>
+                                  </CardBody>
+                                </Card>
+                              </td>
+                            </tr>
+                          ) : null}
+                        </Fragment>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             ) : (
               <p className="text-sm text-default-500">
-                No DNS records found. Add one using the form below.
+                No DNS records found. Add one using the form above.
               </p>
             )}
           </>
