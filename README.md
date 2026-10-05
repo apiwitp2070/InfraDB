@@ -27,7 +27,7 @@ Demo (Kind of) is available here: [Visit Site](https://infradb.netlify.app)
 
 ### Prerequisites
 
-- Node.js 20 or later.
+- Node.js 22 or later.
 - A personal access token for service you want to use with required permission scope.
 
 ### Steps
